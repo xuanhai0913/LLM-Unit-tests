@@ -2,7 +2,7 @@
 
 An intelligent application that leverages Large Language Models (Deepseek) to automatically generate comprehensive unit tests based on provided code, specifications, and test cases.
 
-## [object Object] Overview
+## Overview
 
 This project aims to revolutionize unit test generation by harnessing the power of LLMs. Instead of manually writing tests, developers can provide code snippets and specifications, and the system will automatically generate meaningful, comprehensive unit tests.
 
@@ -64,7 +64,7 @@ python -c "from src.config import Config; print('Setup successful!')"
 - **[Plan.md](Plan.md)** - Project roadmap and architecture
 - **[Checklist.md](Checklist.md)** - Task tracking and progress
 
-## [object Object] Structure
+## Project Structure
 
 ```
 LLM-Unit-Tests/
