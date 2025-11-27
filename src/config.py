@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 class Config:
     """Configuration class for managing application settings."""
 
-    def __init__(self, env_file: str = ".env", load_env: bool = True):
+    def __init__(self, env_file: str = ".env", load_env: bool = True, validate: bool = True):
         """
         Initialize configuration from environment variables.
 
@@ -48,7 +48,8 @@ class Config:
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
         # Validate required configuration
-        self._validate()
+        if validate:
+            self._validate()
 
     def _validate(self) -> None:
         """

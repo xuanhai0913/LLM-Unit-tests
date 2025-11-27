@@ -141,13 +141,5 @@ This project is licensed under the MIT License - see LICENSE file for details.
 - **Video Tutorial**: https://www.youtube.com/watch?v=VtJKQHoyb2A
 - **Deepseek API**: https://platform.deepseek.com
 
-## 📧 Contact
-
-For questions or suggestions, please open an issue on GitHub.
-
 ---
-
-**Status**: 🚧 In Development
-
-Last Updated: 2025-11-27
 
