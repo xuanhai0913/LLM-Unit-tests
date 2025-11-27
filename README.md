@@ -122,19 +122,6 @@ tests = generator.generate_tests(code)
 print(tests)
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Write tests for new features
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see LICENSE file for details.
-
 ## 🔗 References
 
 - **Research Paper**: https://dl.acm.org/doi/pdf/10.1145/3663529.3663839

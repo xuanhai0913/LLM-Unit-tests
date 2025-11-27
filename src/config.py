@@ -9,7 +9,7 @@ from typing import Optional
 try:
     from dotenv import load_dotenv as _load_dotenv
 except Exception:  # pragma: no cover - optional dependency fallback
-    def _load_dotenv(*args, **kwargs):
+    def _load_dotenv(*_args, **_kwargs):
         return False
 
 
