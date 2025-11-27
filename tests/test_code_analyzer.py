@@ -5,7 +5,7 @@ def test_parse_functions_and_classes():
     source = """
 class Greeter:
     def hello(self, name):
-        """Say hello"""
+        '''Say hello'''
         return f"Hello, {name}"
 
 def add(a, b):

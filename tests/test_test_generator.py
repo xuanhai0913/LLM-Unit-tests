@@ -12,8 +12,8 @@ class FakeClient:
 
 
 def test_generate_tests_extracts_code_block():
-    cfg = Config(load_env=False)
-    cfg.deepseek_api_key = "test-key"  # bypass validation needs already satisfied
+    cfg = Config(load_env=False, validate=False)
+    cfg.deepseek_api_key = "test-key"
 
     fake = FakeClient(
         """
@@ -35,7 +35,7 @@ def test_add():
 
 
 def test_generate_and_save(tmp_path):
-    cfg = Config(load_env=False)
+    cfg = Config(load_env=False, validate=False)
     cfg.deepseek_api_key = "test-key"
 
     fake = FakeClient("""```python\n# content\n```\n""")
