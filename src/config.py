@@ -6,7 +6,11 @@ This module handles loading and validating configuration from environment variab
 
 import os
 from typing import Optional
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv as _load_dotenv
+except Exception:  # pragma: no cover - optional dependency fallback
+    def _load_dotenv(*args, **kwargs):
+        return False
 
 
 class Config:
@@ -25,7 +29,7 @@ class Config:
         """
         # Load environment variables from .env file (optional)
         if load_env:
-            load_dotenv(env_file)
+            _load_dotenv(env_file)
 
         # API Configuration
         self.deepseek_api_key: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
