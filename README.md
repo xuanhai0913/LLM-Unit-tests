@@ -25,7 +25,7 @@ This project aims to revolutionize unit test generation by harnessing the power 
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd LLM-Unit-Tests
+cd LLM-Unit-tests
 ```
 
 ### 2. Set Up Environment

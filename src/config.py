@@ -12,18 +12,20 @@ from dotenv import load_dotenv
 class Config:
     """Configuration class for managing application settings."""
 
-    def __init__(self, env_file: str = ".env"):
+    def __init__(self, env_file: str = ".env", load_env: bool = True):
         """
         Initialize configuration from environment variables.
 
         Args:
             env_file: Path to the .env file (default: ".env")
+            load_env: Whether to load variables from the .env file
 
         Raises:
             ValueError: If required configuration is missing
         """
-        # Load environment variables from .env file
-        load_dotenv(env_file)
+        # Load environment variables from .env file (optional)
+        if load_env:
+            load_dotenv(env_file)
 
         # API Configuration
         self.deepseek_api_key: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
