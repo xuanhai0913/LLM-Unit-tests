@@ -8,7 +8,6 @@ function History() {
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [detailLoading, setDetailLoading] = useState(false);
 
     useEffect(() => {
         loadHistory();
@@ -29,7 +28,6 @@ function History() {
     };
 
     const handleViewItem = async (id) => {
-        setDetailLoading(true);
         try {
             const result = await getGeneration(id);
             if (result.success) {
@@ -37,8 +35,6 @@ function History() {
             }
         } catch (error) {
             toast.error('Failed to load details');
-        } finally {
-            setDetailLoading(false);
         }
     };
 
@@ -80,7 +76,6 @@ function History() {
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleString('vi-VN', {
-            year: 'numeric',
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
@@ -91,9 +86,13 @@ function History() {
     if (isLoading) {
         return (
             <div className="history-container fade-in">
-                <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-2xl)' }}>
-                    <span className="loading-spinner" style={{ width: 40, height: 40 }}></span>
-                    <p style={{ marginTop: 'var(--spacing-md)', color: 'var(--text-muted)' }}>Loading history...</p>
+                <div className="panel" style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+                    <div className="loading-pulse" style={{ justifyContent: 'center' }}>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <p className="loading-text" style={{ marginTop: 'var(--space-4)' }}>Loading history...</p>
                 </div>
             </div>
         );
@@ -101,95 +100,78 @@ function History() {
 
     return (
         <div className="history-container fade-in">
-            <div className="card">
-                <div className="card-header">
-                    <h2 className="card-title">
-                        <FiClock />
-                        Generation History
-                    </h2>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        {history.length} items
-                    </span>
-                </div>
+            <div className="history-header">
+                <h1 className="history-title">
+                    <FiClock />
+                    Generation History
+                    <span className="history-count">({history.length} items)</span>
+                </h1>
+            </div>
 
-                {history.length === 0 ? (
+            {history.length === 0 ? (
+                <div className="panel">
                     <div className="empty-state">
                         <FiCode className="empty-state-icon" />
-                        <h3>No generations yet</h3>
+                        <h3 className="empty-state-title">No generations yet</h3>
                         <p>Your test generations will appear here</p>
                     </div>
-                ) : (
-                    <div className="history-list">
-                        {history.map((item) => (
-                            <div
-                                key={item.id}
-                                className="history-item"
-                                onClick={() => handleViewItem(item.id)}
-                            >
-                                <div className="history-item-info">
-                                    <div className="history-item-meta">
-                                        <span className="badge badge-framework">{item.framework}</span>
-                                        <span className="badge badge-language">{item.language}</span>
-                                        <span>
-                                            <FiClock style={{ marginRight: 4 }} />
-                                            {formatDate(item.createdAt)}
-                                        </span>
-                                        {item.generationTime && (
-                                            <span>{(item.generationTime / 1000).toFixed(1)}s</span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-                                    <button className="btn btn-secondary btn-icon" title="View">
-                                        <FiEye />
-                                    </button>
-                                    <button
-                                        className="btn btn-secondary btn-icon"
-                                        onClick={(e) => handleDelete(item.id, e)}
-                                        title="Delete"
-                                    >
-                                        <FiTrash2 />
-                                    </button>
+                </div>
+            ) : (
+                <div className="history-list">
+                    {history.map((item) => (
+                        <div
+                            key={item.id}
+                            className="history-item slide-in"
+                            onClick={() => handleViewItem(item.id)}
+                        >
+                            <div className="history-item-info">
+                                <div className="history-item-meta">
+                                    <span className="badge badge-purple">{item.framework}</span>
+                                    <span className="badge badge-cyan">{item.language}</span>
+                                    <span>
+                                        <FiClock size={12} style={{ marginRight: 4 }} />
+                                        {formatDate(item.createdAt)}
+                                    </span>
+                                    {item.generationTime && (
+                                        <span>⏱️ {(item.generationTime / 1000).toFixed(1)}s</span>
+                                    )}
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                <button className="btn btn-secondary btn-icon" title="View">
+                                    <FiEye />
+                                </button>
+                                <button
+                                    className="btn btn-secondary btn-icon"
+                                    onClick={(e) => handleDelete(item.id, e)}
+                                    title="Delete"
+                                >
+                                    <FiTrash2 />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Detail Modal */}
             {selectedItem && (
                 <div
-                    className="modal-overlay"
+                    className="modal-backdrop"
                     onClick={() => setSelectedItem(null)}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0, 0, 0, 0.8)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                        padding: 'var(--spacing-lg)',
-                    }}
                 >
                     <div
-                        className="card"
+                        className="modal-content"
                         onClick={(e) => e.stopPropagation()}
-                        style={{
-                            maxWidth: 900,
-                            width: '100%',
-                            maxHeight: '90vh',
-                            display: 'flex',
-                            flexDirection: 'column',
-                        }}
                     >
-                        <div className="card-header">
-                            <h2 className="card-title">
-                                <FiCode />
+                        <div className="panel-header">
+                            <div className="panel-title">
+                                <FiCode className="panel-title-icon" />
                                 Generation Details
-                            </h2>
-                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                <span className="badge badge-purple">{selectedItem.framework}</span>
+                                <span className="badge badge-cyan">{selectedItem.language}</span>
                                 <button className="btn btn-secondary btn-icon" onClick={handleCopy} title="Copy">
                                     <FiCopy />
                                 </button>
@@ -206,24 +188,20 @@ function History() {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)' }}>
-                            <span className="badge badge-framework">{selectedItem.framework}</span>
-                            <span className="badge badge-language">{selectedItem.language}</span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                {formatDate(selectedItem.createdAt)}
-                            </span>
-                        </div>
-
-                        <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <h4 style={{ marginBottom: 'var(--spacing-sm)', color: 'var(--text-secondary)' }}>Source Code</h4>
-                                <div className="editor-container" style={{ flex: 1, minHeight: 300 }}>
+                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'var(--border-subtle)', minHeight: 400 }}>
+                            <div style={{ background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                    Source Code
+                                </div>
+                                <div className="editor-container" style={{ flex: 1 }}>
                                     <CodeEditor value={selectedItem.sourceCode} language={selectedItem.language} readOnly />
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <h4 style={{ marginBottom: 'var(--spacing-sm)', color: 'var(--text-secondary)' }}>Generated Tests</h4>
-                                <div className="editor-container" style={{ flex: 1, minHeight: 300 }}>
+                            <div style={{ background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                    Generated Tests
+                                </div>
+                                <div className="editor-container" style={{ flex: 1 }}>
                                     <CodeEditor value={selectedItem.generatedTests} language={selectedItem.language} readOnly />
                                 </div>
                             </div>
