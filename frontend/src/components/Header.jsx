@@ -1,12 +1,13 @@
-import { FiCode, FiClock, FiHome } from 'react-icons/fi';
+import { FiHome, FiClock } from 'react-icons/fi';
 
 function Header({ currentPage, setCurrentPage }) {
     return (
         <header className="header">
             <div className="header-content">
                 <div className="logo">
-                    <FiCode className="logo-icon" />
-                    <span>LLM Unit Test Generator</span>
+                    <img src="/logo.png" alt="TestGen AI" className="logo-image" />
+                    <span className="logo-text">TestGen AI</span>
+                    <span className="logo-badge">Beta</span>
                 </div>
 
                 <nav className="nav">

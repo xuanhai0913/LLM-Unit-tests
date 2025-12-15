@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiPlay, FiCopy, FiDownload, FiCode, FiFileText, FiZap } from 'react-icons/fi';
+import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
 import { generateTests } from '../services/api';
@@ -101,66 +101,70 @@ function Home() {
     return (
         <div className="home-container fade-in">
             {/* Input Panel */}
-            <div className="card editor-panel">
-                <div className="card-header">
-                    <h2 className="card-title">
-                        <FiCode />
+            <div className="panel">
+                <div className="panel-header">
+                    <div className="panel-title">
+                        <FiCode className="panel-title-icon" />
                         Source Code
-                    </h2>
-                    <div className="toolbar">
-                        <div className="toolbar-group">
-                            <select
-                                className="select"
-                                value={language}
-                                onChange={(e) => setLanguage(e.target.value)}
-                            >
-                                <option value="python">Python</option>
-                                <option value="javascript">JavaScript</option>
-                                <option value="typescript">TypeScript</option>
-                            </select>
-                            <select
-                                className="select"
-                                value={framework}
-                                onChange={(e) => setFramework(e.target.value)}
-                            >
-                                <option value="pytest">pytest</option>
-                                <option value="unittest">unittest</option>
-                                <option value="jest">Jest</option>
-                                <option value="mocha">Mocha</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
-                <div className="editor-container">
-                    <CodeEditor
-                        value={code}
-                        onChange={setCode}
-                        language={language}
-                    />
+                {/* Toolbar */}
+                <div className="toolbar">
+                    <div className="toolbar-group">
+                        <span className="toolbar-label">Language</span>
+                        <select
+                            className="select"
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                        >
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                        </select>
+                    </div>
+                    <div className="toolbar-group">
+                        <span className="toolbar-label">Framework</span>
+                        <select
+                            className="select"
+                            value={framework}
+                            onChange={(e) => setFramework(e.target.value)}
+                        >
+                            <option value="pytest">pytest</option>
+                            <option value="unittest">unittest</option>
+                            <option value="jest">Jest</option>
+                            <option value="mocha">Mocha</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="panel-body">
+                    <div className="editor-container">
+                        <CodeEditor
+                            value={code}
+                            onChange={setCode}
+                            language={language}
+                        />
+                    </div>
                 </div>
 
                 {/* Specs Section */}
-                <div style={{ marginTop: 'var(--spacing-md)' }}>
-                    <label className="card-title" style={{ marginBottom: 'var(--spacing-sm)', fontSize: '0.9rem' }}>
-                        <FiFileText />
+                <div className="specs-section">
+                    <label className="specs-label">
+                        <FiSettings size={14} />
                         Specifications (Optional)
                     </label>
                     <textarea
-                        className="textarea"
-                        placeholder="Add any requirements, edge cases, or specific behaviors you want to test..."
+                        className="specs-textarea"
+                        placeholder="Add requirements, edge cases, or specific behaviors to test..."
                         value={specs}
                         onChange={(e) => setSpecs(e.target.value)}
-                        rows={3}
                     />
-                </div>
 
-                <div style={{ marginTop: 'var(--spacing-md)' }}>
                     <button
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-generate"
                         onClick={handleGenerate}
                         disabled={isLoading || !code.trim()}
-                        style={{ width: '100%', padding: 'var(--spacing-md)' }}
                     >
                         {isLoading ? (
                             <>
@@ -178,19 +182,21 @@ function Home() {
             </div>
 
             {/* Output Panel */}
-            <div className="card result-panel">
-                <div className="card-header">
-                    <h2 className="card-title">
-                        <FiFileText />
+            <div className="panel">
+                <div className="panel-header">
+                    <div className="panel-title">
+                        <FiFileText className="panel-title-icon" />
                         Generated Tests
-                        {generationTime && (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                                ({(generationTime / 1000).toFixed(1)}s)
-                            </span>
-                        )}
-                    </h2>
+                    </div>
                     {generatedTests && (
                         <div className="result-actions">
+                            {generationTime && (
+                                <div className="result-stats">
+                                    <span className="result-stats-item">
+                                        ⏱️ {(generationTime / 1000).toFixed(1)}s
+                                    </span>
+                                </div>
+                            )}
                             <button className="btn btn-secondary btn-icon" onClick={handleCopy} title="Copy">
                                 <FiCopy />
                             </button>
@@ -201,27 +207,37 @@ function Home() {
                     )}
                 </div>
 
-                <div className="result-content" style={{ position: 'relative' }}>
-                    {isLoading && (
-                        <div className="loading-overlay">
-                            <span className="loading-spinner" style={{ width: 40, height: 40 }}></span>
-                            <p>AI is generating tests...</p>
-                        </div>
-                    )}
+                <div className="panel-body">
+                    <div className="result-content">
+                        {isLoading && (
+                            <div className="loading-overlay">
+                                <div className="loading-pulse">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                                <p className="loading-text">AI is generating tests...</p>
+                            </div>
+                        )}
 
-                    {generatedTests ? (
-                        <CodeEditor
-                            value={generatedTests}
-                            language={language}
-                            readOnly
-                        />
-                    ) : (
-                        <div className="result-placeholder">
-                            <FiCode className="result-placeholder-icon" />
-                            <p>Generated tests will appear here</p>
-                            <p style={{ fontSize: '0.85rem' }}>Enter your code and click "Generate"</p>
-                        </div>
-                    )}
+                        {generatedTests ? (
+                            <div className="editor-container">
+                                <CodeEditor
+                                    value={generatedTests}
+                                    language={language}
+                                    readOnly
+                                />
+                            </div>
+                        ) : (
+                            <div className="result-placeholder">
+                                <FiCode className="result-placeholder-icon" />
+                                <p className="result-placeholder-title">Ready to Generate</p>
+                                <p className="result-placeholder-desc">
+                                    Paste your code, configure settings, and click "Generate" to create comprehensive unit tests
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

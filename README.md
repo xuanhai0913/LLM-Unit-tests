@@ -6,7 +6,7 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
 ![React](https://img.shields.io/badge/react-18-blue)
 
-## ✨ Features
+## Features
 
 - **AI-Powered Generation** - Uses Deepseek LLM for intelligent test creation
 - **Multi-Language Support** - Python, JavaScript, TypeScript
@@ -15,7 +15,7 @@
 - **Generation History** - Save and revisit past generations
 - **Copy & Download** - Export generated tests instantly
 
-## 🖼️ Screenshots
+##  Screenshots
 
 | Code Input | Generated Tests |
 |------------|-----------------|
@@ -84,7 +84,7 @@ LLM-Unit-tests/
     └── HUONG_DAN_KY_THUAT.md  # Vietnamese docs
 ```
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -93,7 +93,7 @@ LLM-Unit-tests/
 | `DELETE` | `/api/history/:id` | Delete generation |
 | `GET` | `/api/health` | Health check |
 
-## ⚙️ Configuration
+##  Configuration
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -102,7 +102,7 @@ LLM-Unit-tests/
 | `MAX_TOKENS` | Max tokens for response | 2048 |
 | `TEMPERATURE` | LLM creativity (0-1) | 0.7 |
 
-## 🚢 Deployment
+##  Deployment
 
 See [HUONG_DAN_KY_THUAT.md](docs/HUONG_DAN_KY_THUAT.md) for detailed Google Cloud VM deployment instructions.
 
@@ -112,7 +112,7 @@ See [HUONG_DAN_KY_THUAT.md](docs/HUONG_DAN_KY_THUAT.md) for detailed Google Clou
 docker-compose up -d
 ```
 
-## 📚 Documentation
+##  Documentation
 
 - [Vietnamese Technical Guide](docs/HUONG_DAN_KY_THUAT.md)
 - [Backend README](backend/README.md)
@@ -124,10 +124,4 @@ docker-compose up -d
 - [Video Tutorial](https://www.youtube.com/watch?v=VtJKQHoyb2A)
 - [Deepseek API](https://platform.deepseek.com)
 
-## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-Made with ❤️ using AI

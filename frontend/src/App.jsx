@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import Header from './components/Header';
 import Home from './pages/Home';
 import History from './pages/History';
+import './styles/index.css';
 
 function App() {
     const [currentPage, setCurrentPage] = useState('home');
@@ -12,18 +13,24 @@ function App() {
             <Toaster
                 position="top-right"
                 toastOptions={{
-                    duration: 4000,
+                    duration: 3000,
                     style: {
-                        background: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)',
+                        background: '#1e1e30',
+                        color: '#fff',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(139, 92, 246, 0.2)',
                     },
+                    success: {
+                        iconTheme: { primary: '#10b981', secondary: '#fff' }
+                    },
+                    error: {
+                        iconTheme: { primary: '#ef4444', secondary: '#fff' }
+                    }
                 }}
             />
             <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
             <main className="main-content">
-                {currentPage === 'home' && <Home />}
-                {currentPage === 'history' && <History />}
+                {currentPage === 'home' ? <Home /> : <History />}
             </main>
         </div>
     );
