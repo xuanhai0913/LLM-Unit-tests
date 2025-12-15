@@ -1,132 +1,133 @@
-# LLM-Powered Unit Test Generation
+# LLM-Powered Unit Test Generator
 
-An intelligent application that leverages Large Language Models (Deepseek) to automatically generate comprehensive unit tests based on provided code, specifications, and test cases.
+🚀 An intelligent web application that uses **Large Language Models (Deepseek)** to automatically generate comprehensive unit tests from source code.
 
-## Overview
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Node](https://img.shields.io/badge/node-%3E%3D18-green)
+![React](https://img.shields.io/badge/react-18-blue)
 
-This project aims to revolutionize unit test generation by harnessing the power of LLMs. Instead of manually writing tests, developers can provide code snippets and specifications, and the system will automatically generate meaningful, comprehensive unit tests.
+## ✨ Features
 
-### Key Features
-- **Automated Test Generation**: Generate unit tests from code snippets
-- **LLM-Powered**: Uses Deepseek API for intelligent test creation
-- **Multiple Framework Support**: Support for pytest, unittest, and more
-- **Customizable**: Configurable prompts and output formats
-- **CLI Interface**: Easy-to-use command-line interface
-- **Well-Documented**: Comprehensive documentation and examples
+- **AI-Powered Generation** - Uses Deepseek LLM for intelligent test creation
+- **Multi-Language Support** - Python, JavaScript, TypeScript
+- **Multiple Frameworks** - pytest, unittest, Jest, Mocha
+- **Modern UI** - Dark theme with Monaco code editor
+- **Generation History** - Save and revisit past generations
+- **Copy & Download** - Export generated tests instantly
 
-## 📋 Prerequisites
+## 🖼️ Screenshots
 
-- Python 3.8 or higher
-- Deepseek API key (get one at https://platform.deepseek.com)
-- pip (Python package manager)
+| Code Input | Generated Tests |
+|------------|-----------------|
+| Monaco editor with syntax highlighting | AI-generated comprehensive tests |
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+
+- Node.js 18+
+- Deepseek API Key ([Get one here](https://platform.deepseek.com))
+
+### Installation
+
 ```bash
+# Clone repository
 git clone <repository-url>
 cd LLM-Unit-tests
+
+# Backend setup
+cd backend
+npm install
+cp .env.example .env
+# Edit .env and add your DEEPSEEK_API_KEY
+
+# Frontend setup
+cd ../frontend
+npm install
 ```
 
-### 2. Set Up Environment
+### Running
+
 ```bash
-# Create virtual environment
-python -m venv venv
+# Terminal 1 - Backend
+cd backend
+npm run dev
 
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
 ```
 
-### 3. Install Dependencies
+Open http://localhost:5173 in your browser.
+
+## 📁 Project Structure
+
+```
+LLM-Unit-tests/
+├── frontend/          # React + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── styles/
+│   └── package.json
+│
+├── backend/           # Node.js + Express
+│   ├── src/
+│   │   ├── config/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── models/
+│   └── package.json
+│
+└── docs/
+    └── HUONG_DAN_KY_THUAT.md  # Vietnamese docs
+```
+
+## 🔌 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/generate` | Generate unit tests |
+| `GET` | `/api/history` | Get generation history |
+| `DELETE` | `/api/history/:id` | Delete generation |
+| `GET` | `/api/health` | Health check |
+
+## ⚙️ Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DEEPSEEK_API_KEY` | Your Deepseek API key | (required) |
+| `PORT` | Backend port | 8000 |
+| `MAX_TOKENS` | Max tokens for response | 2048 |
+| `TEMPERATURE` | LLM creativity (0-1) | 0.7 |
+
+## 🚢 Deployment
+
+See [HUONG_DAN_KY_THUAT.md](docs/HUONG_DAN_KY_THUAT.md) for detailed Google Cloud VM deployment instructions.
+
+### Quick Deploy with Docker
+
 ```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure API Key
-Create a `.env` file in the project root:
-```
-DEEPSEEK_API_KEY=your_api_key_here
-```
-
-### 5. Verify Setup
-```bash
-python -c "from src.config import Config; print('Setup successful!')"
+docker-compose up -d
 ```
 
 ## 📚 Documentation
 
-- **[USAGE.md](docs/USAGE.md)** - How to use the application
-- **[API.md](docs/API.md)** - API reference documentation
-- **[INSTALLATION.md](docs/INSTALLATION.md)** - Detailed installation guide
-- **[Plan.md](Plan.md)** - Project roadmap and architecture
-- **[Checklist.md](Checklist.md)** - Task tracking and progress
-
-## Project Structure
-
-```
-LLM-Unit-Tests/
-├── src/                    # Source code
-│   ├── config.py          # Configuration management
-│   ├── api_client.py      # Deepseek API integration
-│   ├── test_generator.py  # Test generation logic
-│   ├── prompt_engineer.py # Prompt templates
-│   ├── code_analyzer.py   # Code analysis
-│   └── utils.py           # Utilities
-├── tests/                 # Unit tests
-├── docs/                  # Documentation
-├── examples/              # Example files
-├── .env                   # API configuration (not in git)
-├── requirements.txt       # Dependencies
-└── README.md             # This file
-```
-
-## 🔧 Development
-
-### Running Tests
-```bash
-pytest tests/ -v
-```
-
-### Code Quality
-```bash
-# Format code
-black src/ tests/
-
-# Lint code
-flake8 src/ tests/
-
-# Type checking
-mypy src/
-```
-
-## 📖 Usage Example
-
-```python
-from src.test_generator import TestGenerator
-from src.config import Config
-
-# Initialize
-config = Config()
-generator = TestGenerator(config)
-
-# Generate tests
-code = """
-def add(a, b):
-    return a + b
-"""
-
-tests = generator.generate_tests(code)
-print(tests)
-```
+- [Vietnamese Technical Guide](docs/HUONG_DAN_KY_THUAT.md)
+- [Backend README](backend/README.md)
+- [Frontend README](frontend/README.md)
 
 ## 🔗 References
 
-- **Research Paper**: https://dl.acm.org/doi/pdf/10.1145/3663529.3663839
-- **Video Tutorial**: https://www.youtube.com/watch?v=VtJKQHoyb2A
-- **Deepseek API**: https://platform.deepseek.com
+- [Research Paper](https://dl.acm.org/doi/pdf/10.1145/3663529.3663839)
+- [Video Tutorial](https://www.youtube.com/watch?v=VtJKQHoyb2A)
+- [Deepseek API](https://platform.deepseek.com)
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
+Made with ❤️ using AI
