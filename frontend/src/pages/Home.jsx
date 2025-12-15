@@ -100,19 +100,11 @@ function Home() {
 
     return (
         <div className="home-container fade-in">
-            {/* Input Panel */}
-            <div className="panel">
-                <div className="panel-header">
-                    <div className="panel-title">
-                        <FiCode className="panel-title-icon" />
-                        Source Code
-                    </div>
-                </div>
-
-                {/* Toolbar */}
-                <div className="toolbar">
-                    <div className="toolbar-group">
-                        <span className="toolbar-label">Language</span>
+            {/* Config Bar */}
+            <div className="config-bar">
+                <div className="config-left">
+                    <div className="config-group">
+                        <span className="config-label">Language</span>
                         <select
                             className="select"
                             value={language}
@@ -123,8 +115,8 @@ function Home() {
                             <option value="typescript">TypeScript</option>
                         </select>
                     </div>
-                    <div className="toolbar-group">
-                        <span className="toolbar-label">Framework</span>
+                    <div className="config-group">
+                        <span className="config-label">Framework</span>
                         <select
                             className="select"
                             value={framework}
@@ -138,78 +130,71 @@ function Home() {
                     </div>
                 </div>
 
-                <div className="panel-body">
-                    <div className="editor-container">
-                        <CodeEditor
-                            value={code}
-                            onChange={setCode}
-                            language={language}
-                        />
-                    </div>
-                </div>
-
-                {/* Specs Section */}
-                <div className="specs-section">
-                    <label className="specs-label">
-                        <FiSettings size={14} />
-                        Specifications (Optional)
-                    </label>
-                    <textarea
-                        className="specs-textarea"
-                        placeholder="Add requirements, edge cases, or specific behaviors to test..."
-                        value={specs}
-                        onChange={(e) => setSpecs(e.target.value)}
-                    />
-
-                    <button
-                        className="btn btn-primary btn-generate"
-                        onClick={handleGenerate}
-                        disabled={isLoading || !code.trim()}
-                    >
-                        {isLoading ? (
-                            <>
-                                <span className="loading-spinner"></span>
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <FiZap />
-                                Generate Unit Tests
-                            </>
-                        )}
-                    </button>
-                </div>
+                <button
+                    className="btn btn-primary btn-generate"
+                    onClick={handleGenerate}
+                    disabled={isLoading || !code.trim()}
+                >
+                    {isLoading ? (
+                        <>
+                            <span className="loading-spinner"></span>
+                            Generating...
+                        </>
+                    ) : (
+                        <>
+                            <FiZap />
+                            Generate Unit Tests
+                        </>
+                    )}
+                </button>
             </div>
 
-            {/* Output Panel */}
-            <div className="panel">
-                <div className="panel-header">
-                    <div className="panel-title">
-                        <FiFileText className="panel-title-icon" />
-                        Generated Tests
-                    </div>
-                    {generatedTests && (
-                        <div className="result-actions">
-                            {generationTime && (
-                                <div className="result-stats">
-                                    <span className="result-stats-item">
-                                        ⏱️ {(generationTime / 1000).toFixed(1)}s
-                                    </span>
-                                </div>
-                            )}
-                            <button className="btn btn-secondary btn-icon" onClick={handleCopy} title="Copy">
-                                <FiCopy />
-                            </button>
-                            <button className="btn btn-secondary btn-icon" onClick={handleDownload} title="Download">
-                                <FiDownload />
-                            </button>
+            {/* Editors Grid */}
+            <div className="editors-grid">
+                {/* Source Code Panel */}
+                <div className="panel">
+                    <div className="panel-header">
+                        <div className="panel-title">
+                            <FiCode className="panel-title-icon" />
+                            Source Code
                         </div>
-                    )}
+                    </div>
+                    <div className="panel-body">
+                        <div className="editor-container">
+                            <CodeEditor
+                                value={code}
+                                onChange={setCode}
+                                language={language}
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                <div className="panel-body">
-                    <div className="result-content">
-                        {isLoading && (
+                {/* Generated Tests Panel */}
+                <div className="panel">
+                    <div className="panel-header">
+                        <div className="panel-title">
+                            <FiFileText className="panel-title-icon" />
+                            Generated Tests
+                        </div>
+                        {generatedTests && (
+                            <div className="result-actions">
+                                {generationTime && (
+                                    <span className="result-stats">
+                                        ⏱️ {(generationTime / 1000).toFixed(1)}s
+                                    </span>
+                                )}
+                                <button className="btn btn-secondary btn-icon" onClick={handleCopy} title="Copy">
+                                    <FiCopy />
+                                </button>
+                                <button className="btn btn-secondary btn-icon" onClick={handleDownload} title="Download">
+                                    <FiDownload />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="panel-body">
+                        {isLoading ? (
                             <div className="loading-overlay">
                                 <div className="loading-pulse">
                                     <span></span>
@@ -218,9 +203,7 @@ function Home() {
                                 </div>
                                 <p className="loading-text">AI is generating tests...</p>
                             </div>
-                        )}
-
-                        {generatedTests ? (
+                        ) : generatedTests ? (
                             <div className="editor-container">
                                 <CodeEditor
                                     value={generatedTests}
@@ -233,11 +216,27 @@ function Home() {
                                 <FiCode className="result-placeholder-icon" />
                                 <p className="result-placeholder-title">Ready to Generate</p>
                                 <p className="result-placeholder-desc">
-                                    Paste your code, configure settings, and click "Generate" to create comprehensive unit tests
+                                    Paste your code on the left, then click "Generate Unit Tests" to create comprehensive test cases
                                 </p>
                             </div>
                         )}
                     </div>
+                </div>
+            </div>
+
+            {/* Bottom Specs Section */}
+            <div className="bottom-actions">
+                <div className="specs-box">
+                    <label className="specs-label">
+                        <FiSettings size={14} />
+                        Specifications (Optional)
+                    </label>
+                    <textarea
+                        className="specs-textarea"
+                        placeholder="Add requirements, edge cases, or specific behaviors to test..."
+                        value={specs}
+                        onChange={(e) => setSpecs(e.target.value)}
+                    />
                 </div>
             </div>
         </div>

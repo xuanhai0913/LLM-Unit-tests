@@ -5,9 +5,8 @@ function Header({ currentPage, setCurrentPage }) {
         <header className="header">
             <div className="header-content">
                 <div className="logo">
-                    <img src="/logo.png" alt="TestGen AI" className="logo-image" />
-                    <span className="logo-text">TestGen AI</span>
-                    <span className="logo-badge">Beta</span>
+                    <img src="/logo.png" alt="LLM Project" className="logo-image" />
+                    <span className="logo-text">LLM Project</span>
                 </div>
 
                 <nav className="nav">
