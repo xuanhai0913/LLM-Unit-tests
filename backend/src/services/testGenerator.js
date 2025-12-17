@@ -13,14 +13,16 @@ class TestGenerator {
      * @param {string} [params.specs] - Optional specifications
      * @param {string} [params.framework] - Test framework (default: pytest)
      * @param {string} [params.language] - Programming language (default: python)
+     * @param {string} [params.provider] - LLM provider (gemini/deepseek)
+     * @param {string} [params.userApiKey] - User's own API key
      * @returns {Promise<object>} Generated tests and metadata
      */
-    async generateTests({ code, specs = '', framework = 'pytest', language = 'python' }) {
+    async generateTests({ code, specs = '', framework = 'pytest', language = 'python', provider, userApiKey }) {
         if (!code || code.trim().length === 0) {
             throw new Error('Source code is required');
         }
 
-        console.log(`📝 Generating ${framework} tests for ${language} code...`);
+        console.log(`📝 Generating ${framework} tests for ${language} code using ${provider || 'default'} provider...`);
 
         // Build the prompt
         const prompt = buildTestGenerationPrompt({
@@ -30,9 +32,12 @@ class TestGenerator {
             language,
         });
 
-        // Call LLM API
+        // Call LLM API with optional user key
         const startTime = Date.now();
-        const rawResponse = await llmClient.generateText(prompt);
+        const rawResponse = await llmClient.generateText(prompt, {
+            provider,
+            userApiKey,
+        });
         const generationTime = Date.now() - startTime;
 
         // Extract code from response

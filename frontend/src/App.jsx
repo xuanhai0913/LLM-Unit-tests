@@ -1,12 +1,41 @@
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import Home from './pages/Home';
 import History from './pages/History';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Settings from './pages/Settings';
+import AuthCallback from './pages/AuthCallback';
 import './styles/index.css';
 
-function App() {
-    const [currentPage, setCurrentPage] = useState('home');
+// Protected route wrapper
+function ProtectedRoute({ children }) {
+    const { isAuthenticated, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <div className="loading-overlay">
+                <div className="loading-pulse">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+}
+
+// Main app content with routing
+function AppContent() {
+    const { isAuthenticated, isLoading } = useAuth();
 
     return (
         <div className="app">
@@ -28,10 +57,36 @@ function App() {
                     }
                 }}
             />
-            <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
+
+            <Header />
+
             <main className="main-content">
-                {currentPage === 'home' ? <Home /> : <History />}
+                <Routes>
+                    {/* Public routes */}
+                    <Route path="/login" element={
+                        isAuthenticated ? <Navigate to="/" replace /> : <Login />
+                    } />
+                    <Route path="/register" element={
+                        isAuthenticated ? <Navigate to="/" replace /> : <Register />
+                    } />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+
+                    {/* Main app - accessible without login but with limited features */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/history" element={<History />} />
+
+                    {/* Protected routes */}
+                    <Route path="/settings" element={
+                        <ProtectedRoute>
+                            <Settings />
+                        </ProtectedRoute>
+                    } />
+
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
             </main>
+
             <footer style={{
                 textAlign: 'center',
                 padding: '2rem 1rem',
@@ -45,6 +100,16 @@ function App() {
                 </p>
             </footer>
         </div>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </BrowserRouter>
     );
 }
 

@@ -9,14 +9,25 @@
     "dev": "nodemon src/index.js",
     "test": "jest"
   },
-  "keywords": ["llm", "unit-test", "deepseek", "test-generator"],
+  "keywords": [
+    "llm",
+    "unit-test",
+    "deepseek",
+    "test-generator"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-session": "^1.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "sequelize": "^6.35.0",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0"

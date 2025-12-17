@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import config from '../config/index.js';
+import defineUserModel from './User.js';
 
 // Initialize Sequelize with SQLite
 const sequelize = new Sequelize(config.database.url, {
@@ -41,10 +42,27 @@ const Generation = sequelize.define('Generation', {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+    // Link to user (optional for backward compatibility)
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+    },
+    // LLM provider used
+    llmProvider: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
 }, {
     tableName: 'generations',
     timestamps: true,
 });
+
+// User Model
+const User = defineUserModel(sequelize);
+
+// Associations
+User.hasMany(Generation, { foreignKey: 'userId', as: 'generations' });
+Generation.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // Initialize database
 export async function initDatabase() {
@@ -53,7 +71,7 @@ export async function initDatabase() {
         console.log('✅ Database connection established');
 
         // Sync models (create tables if not exist)
-        await sequelize.sync({ force: false });
+        await sequelize.sync({ alter: true });
         console.log('✅ Database models synchronized');
     } catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -61,5 +79,6 @@ export async function initDatabase() {
     }
 }
 
-export { sequelize, Generation };
-export default { sequelize, Generation, initDatabase };
+export { sequelize, Generation, User };
+export default { sequelize, Generation, User, initDatabase };
+

@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
 import { generateTests } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const SAMPLE_CODE = `def calculate_average(numbers):
     """Calculate the average of a list of numbers."""
@@ -36,13 +37,22 @@ class Calculator:
 `;
 
 function Home() {
+    const { user, isAuthenticated } = useAuth();
     const [code, setCode] = useState(SAMPLE_CODE);
     const [specs, setSpecs] = useState('');
     const [framework, setFramework] = useState('pytest');
     const [language, setLanguage] = useState('python');
+    const [llmProvider, setLlmProvider] = useState('gemini');
     const [generatedTests, setGeneratedTests] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [generationTime, setGenerationTime] = useState(null);
+
+    // Set default provider from user preferences
+    useEffect(() => {
+        if (user?.preferred_llm) {
+            setLlmProvider(user.preferred_llm);
+        }
+    }, [user]);
 
     const handleGenerate = async () => {
         if (!code.trim()) {
@@ -60,12 +70,13 @@ function Home() {
                 specs: specs || undefined,
                 framework,
                 language,
+                llmProvider,
             });
 
             if (result.success) {
                 setGeneratedTests(result.data.generatedTests);
                 setGenerationTime(result.data.generationTime);
-                toast.success('Tests generated successfully!');
+                toast.success(`Tests generated with ${result.data.llmProvider || llmProvider}!`);
             } else {
                 throw new Error(result.error || 'Generation failed');
             }
@@ -126,6 +137,17 @@ function Home() {
                             <option value="unittest">unittest</option>
                             <option value="jest">Jest</option>
                             <option value="mocha">Mocha</option>
+                        </select>
+                    </div>
+                    <div className="config-group">
+                        <span className="config-label"><FiCpu style={{ marginRight: '4px' }} />LLM</span>
+                        <select
+                            className="select"
+                            value={llmProvider}
+                            onChange={(e) => setLlmProvider(e.target.value)}
+                        >
+                            <option value="gemini">Gemini</option>
+                            <option value="deepseek">Deepseek</option>
                         </select>
                     </div>
                 </div>

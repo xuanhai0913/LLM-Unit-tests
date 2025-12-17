@@ -17,26 +17,33 @@ class LLMClient {
 
     /**
      * Generate text using the configured LLM provider
+     * @param {string} prompt - The prompt to send
+     * @param {object} options - Options including provider and userApiKey
      */
     async generateText(prompt, options = {}) {
         const provider = options.provider || config.llm.provider;
+        const userApiKey = options.userApiKey;
 
         switch (provider.toLowerCase()) {
             case 'gemini':
-                return this._callGemini(prompt, options);
+                return this._callGemini(prompt, options, userApiKey);
             case 'deepseek':
             default:
-                return this._callDeepseek(prompt, options);
+                return this._callDeepseek(prompt, options, userApiKey);
         }
     }
 
     /**
      * Call Deepseek API
      */
-    async _callDeepseek(prompt, options = {}) {
-        const apiKey = config.deepseek.apiKey;
+    async _callDeepseek(prompt, options = {}, userApiKey = null) {
+        const apiKey = userApiKey || config.deepseek.apiKey;
         const apiUrl = config.deepseek.apiUrl;
         const model = options.model || config.deepseek.model;
+
+        if (!apiKey) {
+            throw new Error('Deepseek API key is required. Please configure your API key in settings.');
+        }
 
         const payload = {
             model: model,
@@ -60,9 +67,13 @@ class LLMClient {
     /**
      * Call Google Gemini API
      */
-    async _callGemini(prompt, options = {}) {
-        const apiKey = config.gemini.apiKey;
+    async _callGemini(prompt, options = {}, userApiKey = null) {
+        const apiKey = userApiKey || config.gemini.apiKey;
         const model = options.model || config.gemini.model;
+
+        if (!apiKey) {
+            throw new Error('Gemini API key is required. Please configure your API key in settings.');
+        }
 
         const payload = {
             contents: [{
