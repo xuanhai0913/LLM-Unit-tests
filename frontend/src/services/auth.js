@@ -105,8 +105,8 @@ export async function logout() {
  * Redirect to Google OAuth
  */
 export function googleLogin() {
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    window.location.href = `${apiUrl}/auth/google`;
+    // Use relative path since nginx proxies /api to backend
+    window.location.href = '/api/auth/google';
 }
 
 // Settings API
