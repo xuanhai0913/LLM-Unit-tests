@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
@@ -38,6 +38,9 @@ function ProtectedRoute({ children }) {
 function AppContent() {
     const { isAuthenticated, isLoading } = useAuth();
 
+    const location = useLocation();
+    const isLanding = location.pathname === '/' && !isAuthenticated;
+
     return (
         <div className="app">
             <Toaster
@@ -61,7 +64,7 @@ function AppContent() {
 
             <Header />
 
-            <main className="main-content">
+            <main className={isLanding ? 'main-content-full' : 'main-content'}>
                 <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={
