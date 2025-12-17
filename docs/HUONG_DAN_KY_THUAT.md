@@ -1,84 +1,145 @@
 # Hướng Dẫn Kỹ Thuật - LLM Unit Test Generator
 
-## Giới Thiệu
+## 📋 Giới Thiệu
 
-Ứng dụng sử dụng **Large Language Model (Deepseek)** để tự động tạo unit tests cho code. Người dùng chỉ cần nhập code nguồn, hệ thống sẽ phân tích và tạo ra các test cases bao gồm:
+**LLM Unit Test Generator** là ứng dụng web sử dụng AI (Deepseek hoặc Google Gemini) để tự động tạo unit tests từ source code. 
 
-- ✅ Test cho các trường hợp bình thường
-- ✅ Test cho các edge cases (giá trị biên)
-- ✅ Test cho xử lý lỗi và exceptions
-
----
-
-## Kiến Trúc Hệ Thống
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend                             │
-│                    (React + Vite)                           │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │ Code Editor │  │ Test Output │  │   History View      │  │
-│  │  (Monaco)   │  │   Panel     │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │ HTTP/REST API
-┌────────────────────────▼────────────────────────────────────┐
-│                        Backend                              │
-│                  (Node.js + Express)                        │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Routes    │  │  Services   │  │      Models         │  │
-│  │ /api/...    │──│ Generator   │──│   (Sequelize)       │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-         ┌───────────────┼───────────────┐
-         │               │               │
-         ▼               ▼               ▼
-   ┌──────────┐    ┌──────────┐    ┌──────────┐
-   │ Deepseek │    │  SQLite  │    │  Config  │
-   │   API    │    │ Database │    │   .env   │
-   └──────────┘    └──────────┘    └──────────┘
-```
+### Tính Năng Chính
+- ✅ Tạo tests tự động cho **Python, JavaScript, TypeScript**
+- ✅ Hỗ trợ **pytest, unittest, Jest, Mocha**
+- ✅ Giao diện modern với **Monaco Editor** (VS Code editor)
+- ✅ Lưu lịch sử generation
+- ✅ Copy / Download tests trực tiếp
 
 ---
 
-## Cài Đặt và Chạy
+## 🏗️ Kiến Trúc Hệ Thống
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND                                │
+│                    React 18 + Vite 5                            │
+│  ┌──────────────┐  ┌───────────────┐  ┌─────────────────────┐   │
+│  │ Monaco Editor│  │   Home Page   │  │   History Page      │   │
+│  │  (CodeEditor)│  │ (Generate UI) │  │ (View past tests)   │   │
+│  └──────────────┘  └───────────────┘  └─────────────────────┘   │
+│                              │                                   │
+│                    ┌─────────▼──────────┐                        │
+│                    │  API Service       │                        │
+│                    │  (axios client)    │                        │
+│                    └─────────┬──────────┘                        │
+└──────────────────────────────┼──────────────────────────────────┘
+                               │ HTTP REST API (JSON)
+┌──────────────────────────────▼──────────────────────────────────┐
+│                         BACKEND                                  │
+│                   Node.js + Express 4                            │
+│  ┌──────────────┐  ┌───────────────┐  ┌─────────────────────┐   │
+│  │   Routes     │  │   Services    │  │      Models         │   │
+│  │ /generate    │──│ TestGenerator │──│   Generation        │   │
+│  │ /history     │  │ LLMClient     │  │   (Sequelize)       │   │
+│  │ /health      │  └───────────────┘  └─────────────────────┘   │
+│  └──────────────┘                                                │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+         ▼                     ▼                     ▼
+   ┌──────────┐          ┌──────────┐          ┌──────────┐
+   │ Gemini   │          │ Deepseek │          │  SQLite  │
+   │   API    │    OR    │   API    │          │ Database │
+   └──────────┘          └──────────┘          └──────────┘
+```
+
+---
+
+## 📂 Cấu Trúc Thư Mục
+
+```
+LLM-Unit-tests/
+├── frontend/                    # React Frontend
+│   ├── src/
+│   │   ├── App.jsx             # Main app với routing thủ công
+│   │   ├── main.jsx            # Entry point
+│   │   ├── components/
+│   │   │   ├── CodeEditor.jsx  # Monaco Editor wrapper
+│   │   │   └── Header.jsx      # Navigation header
+│   │   ├── pages/
+│   │   │   ├── Home.jsx        # Trang generate tests
+│   │   │   └── History.jsx     # Trang xem lịch sử
+│   │   ├── services/
+│   │   │   └── api.js          # Axios HTTP client
+│   │   └── styles/
+│   │       └── index.css       # Global styles
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+│
+├── backend/                     # Node.js Backend
+│   ├── src/
+│   │   ├── index.js            # Express server entry
+│   │   ├── config/
+│   │   │   └── index.js        # Environment config
+│   │   ├── routes/
+│   │   │   ├── generate.js     # POST /api/generate
+│   │   │   └── history.js      # GET/DELETE /api/history
+│   │   ├── services/
+│   │   │   ├── testGenerator.js  # Core generation logic
+│   │   │   ├── llmClient.js      # Multi-provider LLM client
+│   │   │   └── deepseekClient.js # Deepseek-specific (legacy)
+│   │   ├── models/
+│   │   │   └── index.js        # Sequelize models
+│   │   └── utils/
+│   │       └── prompts.js      # Prompt engineering
+│   ├── .env.example
+│   └── package.json
+│
+├── docs/                        # Tài liệu
+│   ├── HUONG_DAN_KY_THUAT.md
+│   ├── frontend.md
+│   └── backend.md
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## 🚀 Cài Đặt & Chạy
 
 ### Yêu Cầu Hệ Thống
-
-- **Node.js** >= 18.0
-- **npm** >= 9.0
-- **Deepseek API Key** (lấy tại https://platform.deepseek.com)
+| Yêu cầu | Phiên bản |
+|---------|-----------|
+| Node.js | >= 18.0 |
+| npm | >= 9.0 |
+| API Key | Gemini hoặc Deepseek |
 
 ### Bước 1: Clone Repository
-
 ```bash
 git clone <repository-url>
 cd LLM-Unit-tests
 ```
 
 ### Bước 2: Cài Đặt Backend
-
 ```bash
 cd backend
-
-# Cài đặt dependencies
 npm install
-
-# Tạo file cấu hình
 cp .env.example .env
+```
 
-# Chỉnh sửa file .env và thêm DEEPSEEK_API_KEY
-notepad .env  # Windows
-nano .env     # Linux/Mac
+Chỉnh sửa file `.env`:
+```env
+# Chọn provider: gemini hoặc deepseek
+LLM_PROVIDER=gemini
+
+# Google Gemini API (khuyến nghị)
+GEMINI_API_KEY=your_gemini_api_key
+
+# Hoặc Deepseek API
+DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 ### Bước 3: Cài Đặt Frontend
-
 ```bash
 cd ../frontend
-
-# Cài đặt dependencies
 npm install
 ```
 
@@ -88,119 +149,109 @@ npm install
 ```bash
 cd backend
 npm run dev
-# Server chạy tại: http://localhost:8000
+# 🚀 Server: http://localhost:8000
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm run dev
-# Mở trình duyệt tại: http://localhost:5173
+# 🌐 Web: http://localhost:5173
 ```
 
 ---
 
-## API Reference
+## 📡 API Reference
 
-### Generate Tests
+### POST /api/generate
+Tạo unit tests từ source code.
 
-```http
-POST /api/generate
-Content-Type: application/json
-
+**Request:**
+```json
 {
   "code": "def add(a, b): return a + b",
-  "specs": "Function should handle negative numbers",
+  "specs": "Handle negative numbers",
   "framework": "pytest",
-  "language": "python"
+  "language": "python",
+  "saveHistory": true
 }
 ```
 
-**Response:**
+**Response (Success):**
 ```json
 {
   "success": true,
   "data": {
     "generatedTests": "import pytest\n\ndef test_add()...",
     "framework": "pytest",
+    "language": "python",
     "generationTime": 2500,
     "isValid": true,
-    "id": "uuid-here"
+    "id": "uuid-string"
   }
 }
 ```
 
-### Get History
+### GET /api/history
+Lấy danh sách generation history.
 
-```http
-GET /api/history?limit=50&offset=0
-```
+| Param | Type | Default | Mô tả |
+|-------|------|---------|-------|
+| limit | number | 50 | Số lượng records |
+| offset | number | 0 | Bắt đầu từ record thứ |
 
-### Delete History Item
+### GET /api/history/:id
+Lấy chi tiết một generation.
 
-```http
-DELETE /api/history/:id
-```
+### DELETE /api/history/:id
+Xóa một generation khỏi history.
 
-### Health Check
-
-```http
-GET /api/health
-```
+### GET /api/health
+Health check endpoint.
 
 ---
 
-## Cấu Hình
+## ⚙️ Cấu Hình
 
 ### Biến Môi Trường (.env)
 
-| Tên | Mô tả | Mặc định |
-|-----|-------|----------|
-| `DEEPSEEK_API_KEY` | API key từ Deepseek | (bắt buộc) |
-| `DEEPSEEK_API_URL` | URL của Deepseek API | https://api.deepseek.com/v1 |
-| `DEEPSEEK_MODEL` | Model sử dụng | deepseek-coder |
-| `PORT` | Port cho backend | 8000 |
-| `MAX_TOKENS` | Token tối đa cho response | 2048 |
-| `TEMPERATURE` | Độ sáng tạo (0-1) | 0.7 |
+| Biến | Mô tả | Mặc định |
+|------|-------|----------|
+| **LLM_PROVIDER** | `gemini` hoặc `deepseek` | gemini |
+| **GEMINI_API_KEY** | Google Gemini API key | - |
+| **DEEPSEEK_API_KEY** | Deepseek API key | - |
+| **PORT** | Port backend | 8000 |
+| **MAX_TOKENS** | Max tokens response | 4096 |
+| **TEMPERATURE** | LLM creativity (0-1) | 0.7 |
+| **DATABASE_URL** | SQLite database path | sqlite:./database.sqlite |
 
 ---
 
-## Cấu Trúc Thư Mục
+## 🐳 Docker Deployment
 
+```bash
+docker-compose up -d
 ```
-LLM-Unit-tests/
-├── frontend/                # React Frontend
-│   ├── src/
-│   │   ├── components/      # UI components
-│   │   ├── pages/           # Trang (Home, History)
-│   │   ├── services/        # API calls
-│   │   └── styles/          # CSS
-│   └── package.json
-│
-├── backend/                 # Node.js Backend
-│   ├── src/
-│   │   ├── config/          # Cấu hình
-│   │   ├── routes/          # API routes
-│   │   ├── services/        # Business logic
-│   │   ├── models/          # Database models
-│   │   └── utils/           # Utilities
-│   └── package.json
-│
-├── docs/                    # Tài liệu
-└── README.md
+
+Hoặc build riêng:
+```bash
+# Build backend
+cd backend && docker build -t llm-backend .
+
+# Build frontend  
+cd frontend && docker build -t llm-frontend .
 ```
 
 ---
 
-## Deploy lên Google Cloud VM
+## ☁️ Deploy lên Google Cloud VM
 
 ### 1. Chuẩn bị VM
-
 ```bash
 # Cập nhật hệ thống
 sudo apt update && sudo apt upgrade -y
 
-# Cài đặt Node.js
+# Cài đặt Node.js 18+
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 
@@ -211,28 +262,25 @@ sudo npm install -g pm2
 sudo apt install -y nginx
 ```
 
-### 2. Clone và Build
-
+### 2. Clone & Build
 ```bash
-# Clone project
 cd /var/www
-git clone <repository-url> llm-unit-tests
+git clone <repo-url> llm-unit-tests
 cd llm-unit-tests
 
-# Setup Backend
+# Backend
 cd backend
 npm install
 cp .env.example .env
-# Chỉnh sửa .env với API key
+nano .env  # Thêm API key
 
-# Setup Frontend
+# Frontend
 cd ../frontend
 npm install
 npm run build
 ```
 
-### 3. Cấu hình PM2 (Backend)
-
+### 3. Cấu hình PM2
 ```bash
 cd /var/www/llm-unit-tests/backend
 pm2 start src/index.js --name "llm-backend"
@@ -241,10 +289,8 @@ pm2 startup
 ```
 
 ### 4. Cấu hình Nginx
-
 ```nginx
 # /etc/nginx/sites-available/llm-unit-tests
-
 server {
     listen 80;
     server_name your-domain.com;
@@ -255,7 +301,7 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # Backend API
+    # Backend API proxy
     location /api {
         proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
@@ -268,7 +314,6 @@ server {
 ```
 
 ```bash
-# Kích hoạt cấu hình
 sudo ln -s /etc/nginx/sites-available/llm-unit-tests /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
@@ -276,31 +321,31 @@ sudo systemctl restart nginx
 
 ---
 
-## Xử Lý Sự Cố
+## 🔧 Xử Lý Sự Cố
 
-### Lỗi: "DEEPSEEK_API_KEY is not set"
+| Lỗi | Nguyên nhân | Giải pháp |
+|-----|-------------|-----------|
+| `API key not set` | Chưa cấu hình env | Kiểm tra `.env` file |
+| `Failed to generate` | API key hết hạn/sai | Kiểm tra API key còn hợp lệ |
+| `Cannot connect to backend` | Backend chưa chạy | `pm2 status` để kiểm tra |
+| `CORS error` | Frontend gọi sai URL | Kiểm tra `VITE_API_URL` |
 
-- Kiểm tra file `.env` trong thư mục `backend/`
-- Đảm bảo có dòng: `DEEPSEEK_API_KEY=sk-your-key-here`
+### Xem Logs
+```bash
+# PM2 logs
+pm2 logs llm-backend
 
-### Lỗi: "Failed to generate tests"
-
-- Kiểm tra API key còn hiệu lực
-- Kiểm tra kết nối internet
-- Xem logs: `pm2 logs llm-backend`
-
-### Lỗi: "Cannot connect to backend"
-
-- Kiểm tra backend đang chạy: `pm2 status`
-- Kiểm tra port 8000 không bị block bởi firewall
-
----
-
-## Liên Hệ & Hỗ Trợ
-
-- **Email**: support@example.com
-- **GitHub Issues**: [Link đến repository]
+# Nginx logs
+tail -f /var/log/nginx/error.log
+```
 
 ---
 
-*Tài liệu này được cập nhật lần cuối: Tháng 12/2024*
+## 📚 Tài Liệu Chi Tiết
+
+- [Frontend Documentation](./frontend.md)
+- [Backend Documentation](./backend.md)
+
+---
+
+*Cập nhật lần cuối: Tháng 12/2024*
