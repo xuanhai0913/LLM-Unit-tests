@@ -23,20 +23,24 @@ function Header() {
                 </Link>
 
                 <nav className="nav">
-                    <Link
-                        to="/"
-                        className={`nav-btn ${currentPage === '/' ? 'active' : ''}`}
-                    >
-                        <FiHome />
-                        Generator
-                    </Link>
-                    <Link
-                        to="/history"
-                        className={`nav-btn ${currentPage === '/history' ? 'active' : ''}`}
-                    >
-                        <FiClock />
-                        History
-                    </Link>
+                    {isAuthenticated && (
+                        <>
+                            <Link
+                                to="/"
+                                className={`nav-btn ${currentPage === '/' ? 'active' : ''}`}
+                            >
+                                <FiHome />
+                                Generator
+                            </Link>
+                            <Link
+                                to="/history"
+                                className={`nav-btn ${currentPage === '/history' ? 'active' : ''}`}
+                            >
+                                <FiClock />
+                                History
+                            </Link>
+                        </>
+                    )}
                     {isAuthenticated && (
                         <Link
                             to="/settings"

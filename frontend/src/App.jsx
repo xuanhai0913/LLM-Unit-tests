@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import History from './pages/History';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Landing from './pages/Landing';
 import Settings from './pages/Settings';
 import AuthCallback from './pages/AuthCallback';
 import './styles/index.css';
@@ -72,7 +73,7 @@ function AppContent() {
                     <Route path="/auth/callback" element={<AuthCallback />} />
 
                     {/* Main app - accessible without login but with limited features */}
-                    <Route path="/" element={<Home />} />
+                    <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
                     <Route path="/history" element={<History />} />
 
                     {/* Protected routes */}

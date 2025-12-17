@@ -1,6 +1,8 @@
 import express from 'express';
 import CryptoJS from 'crypto-js';
 import testGenerator from '../services/testGenerator.js';
+import { generateWithDashboardProxy } from '../services/dashboardProxy.js';
+import { buildTestGenerationPrompt } from '../utils/prompts.js';
 import { Generation, User } from '../models/index.js';
 import { optionalAuth } from '../middleware/authMiddleware.js';
 import config from '../config/index.js';
@@ -27,6 +29,7 @@ function decryptKey(encryptedKey) {
  * @body {boolean} [saveHistory] - Save to history (default: true)
  * @body {string} [llmProvider] - LLM provider to use (gemini/deepseek)
  * @body {string} [userApiKey] - User's own API key (optional, sent directly)
+ * @body {boolean} [useDashboardProxy] - Force use Dashboard proxy with license key
  */
 router.post('/', optionalAuth, async (req, res, next) => {
     try {
@@ -38,6 +41,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
             saveHistory = true,
             llmProvider,
             userApiKey,
+            useDashboardProxy = false,
         } = req.body;
 
         // Validate input
@@ -51,13 +55,14 @@ router.post('/', optionalAuth, async (req, res, next) => {
         // Determine which API key and provider to use
         let apiKeyToUse = null;
         let providerToUse = llmProvider || config.llm.provider;
+        let useDashboard = useDashboardProxy;
+        let user = null;
 
-        // Priority: 1. User provided key in request, 2. User's saved key, 3. System key
+        // Priority: 1. User provided key in request, 2. User's saved key, 3. Dashboard proxy, 4. System key
         if (userApiKey) {
             apiKeyToUse = userApiKey;
         } else if (req.user) {
-            // Get user's saved API key
-            const user = await User.findByPk(req.user.id);
+            user = await User.findByPk(req.user.id);
             if (user) {
                 // Use user's preferred provider if not specified
                 if (!llmProvider) {
@@ -70,18 +75,59 @@ router.post('/', optionalAuth, async (req, res, next) => {
                 } else if (providerToUse === 'deepseek' && user.deepseek_api_key) {
                     apiKeyToUse = decryptKey(user.deepseek_api_key);
                 }
+
+                // If no personal API key but has active license, use Dashboard proxy
+                if (!apiKeyToUse && user.license_key && user.license_status === 'active') {
+                    useDashboard = true;
+                    console.log('📡 Using Dashboard proxy with license key');
+                }
             }
         }
 
-        // Generate tests with optional user API key
-        const result = await testGenerator.generateTests({
-            code,
-            specs,
-            framework,
-            language,
-            provider: providerToUse,
-            userApiKey: apiKeyToUse,
-        });
+        let result;
+        const startTime = Date.now();
+
+        // Use Dashboard proxy if license is active and no personal API key
+        if (useDashboard && user?.license_key) {
+            try {
+                const prompt = buildTestGenerationPrompt({ code, specs, framework, language });
+                const rawResponse = await generateWithDashboardProxy(user.license_key, prompt);
+
+                const generationTime = Date.now() - startTime;
+
+                // Extract code blocks from response
+                const { extractCodeBlocks } = await import('../utils/prompts.js');
+                const codeBlocks = extractCodeBlocks(rawResponse, language);
+                const testCode = codeBlocks.length > 0 ? codeBlocks[0] : rawResponse;
+
+                result = {
+                    generatedTests: testCode,
+                    rawResponse,
+                    framework,
+                    language,
+                    generationTime,
+                    isValid: true,
+                    timestamp: new Date().toISOString(),
+                    usedDashboardProxy: true,
+                };
+            } catch (proxyError) {
+                console.error('Dashboard proxy failed:', proxyError.message);
+                return res.status(503).json({
+                    error: `Dashboard proxy error: ${proxyError.message}`,
+                    suggestion: 'Hãy kiểm tra license key hoặc thêm API key riêng trong Settings',
+                });
+            }
+        } else {
+            // Generate tests with user's API key or system key
+            result = await testGenerator.generateTests({
+                code,
+                specs,
+                framework,
+                language,
+                provider: providerToUse,
+                userApiKey: apiKeyToUse,
+            });
+        }
 
         // Save to history if requested
         let generation = null;
