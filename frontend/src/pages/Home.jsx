@@ -132,6 +132,7 @@ function Home() {
 
         setIsRunning(true);
         setTestResults(null);
+        setResultsTab('overview');
         setShowResults(true);
 
         try {
