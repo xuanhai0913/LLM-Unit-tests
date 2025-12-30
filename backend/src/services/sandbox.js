@@ -82,38 +82,42 @@ class SandboxService {
         };
 
         if (language === 'python') {
-            // Pytest summary: "======= 1 failed, 2 passed in 0.14s ======="
-            const summaryRegex = /==+ (?:(\d+) failed, )?(?:(\d+) passed, )?(?:(\d+) errors?, )?(?:(\d+) warnings? )?in ([\d.]+)s ==+/;
-            const match = output.match(summaryRegex);
+            // Pytest summary line can vary:
+            // "======= 22 passed in 0.11s ======="
+            // "======= 1 failed, 2 passed in 0.14s ======="
 
-            if (match) {
-                details.failed = parseInt(match[1] || 0);
-                details.passed = parseInt(match[2] || 0);
-                details.errors = parseInt(match[3] || 0);
-                details.total = details.passed + details.failed + details.errors;
-                details.duration = match[5] + 's';
+            // Extract total collected items first as a fallback
+            const collectedMatch = output.match(/collected (\d+) items/);
+            if (collectedMatch) {
+                details.total = parseInt(collectedMatch[1]);
             }
 
-            // Simple parsing for collected items
-            const collectedMatch = output.match(/collected (\d+) items/);
-            if (collectedMatch && details.total === 0) {
-                details.total = parseInt(collectedMatch[1]);
+            // More robust parsing by looking for individual keywords
+            const passedMatch = output.match(/(\d+) passed/);
+            const failedMatch = output.match(/(\d+) failed/);
+            const errorMatch = output.match(/(\d+) error/);
+            const timeMatch = output.match(/in ([\d.]+)s/);
+
+            if (passedMatch) details.passed = parseInt(passedMatch[1]);
+            if (failedMatch) details.failed = parseInt(failedMatch[1]);
+            if (errorMatch) details.errors = parseInt(errorMatch[1]);
+            if (timeMatch) details.duration = timeMatch[1] + 's';
+
+            // Recalculate total if we have counts
+            if (details.passed > 0 || details.failed > 0 || details.errors > 0) {
+                details.total = Math.max(details.total, details.passed + details.failed + details.errors);
             }
         } else if (language === 'javascript' || language === 'typescript') {
             // Jest summary: "Tests:       1 failed, 2 passed, 3 total"
-            const summaryRegex = /Tests:\s+(?:(\d+) failed,\s+)?(?:(\d+) passed,\s+)?(\d+) total/;
-            const match = output.match(summaryRegex);
-
-            if (match) {
-                details.failed = parseInt(match[1] || 0);
-                details.passed = parseInt(match[2] || 0);
-                details.total = parseInt(match[3] || 0);
-            }
-
+            const passedMatch = output.match(/(\d+) passed/);
+            const failedMatch = output.match(/(\d+) failed/);
+            const totalMatch = output.match(/(\d+) total/);
             const timeMatch = output.match(/Time:\s+([\d.]+) s/);
-            if (timeMatch) {
-                details.duration = timeMatch[1] + 's';
-            }
+
+            if (passedMatch) details.passed = parseInt(passedMatch[1]);
+            if (failedMatch) details.failed = parseInt(failedMatch[1]);
+            if (totalMatch) details.total = parseInt(totalMatch[1]);
+            if (timeMatch) details.duration = timeMatch[1] + 's';
         }
 
         return details;
