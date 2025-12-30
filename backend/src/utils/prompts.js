@@ -14,9 +14,11 @@ Follow best practices for the specified testing framework.`;
  * @param {string} [params.specs] - Optional specifications
  * @param {string} [params.framework] - Test framework (pytest, unittest, jest, etc.)
  * @param {string} [params.language] - Programming language
+ * @param {string} [params.referenceCode] - Optional reference code for few-shot prompting
+ * @param {string} [params.customInstructions] - Optional custom instructions for test generation
  * @returns {string} Complete prompt
  */
-export function buildTestGenerationPrompt({ code, specs = '', framework = 'pytest', language = 'python' }) {
+export function buildTestGenerationPrompt({ code, specs = '', framework = 'pytest', language = 'python', referenceCode = '', customInstructions = '' }) {
     const frameworkGuide = getFrameworkGuide(framework);
 
     let prompt = `System: ${DEFAULT_SYSTEM_INSTRUCTIONS}
@@ -37,7 +39,25 @@ ${specs}
 ${code}
 \`\`\`
 
-Instructions:
+`;
+
+    if (referenceCode) {
+        prompt += `Reference/Example Test Code (Follow this style):
+\`\`\`${language}
+${referenceCode}
+\`\`\`
+
+`;
+    }
+
+    if (customInstructions) {
+        prompt += `User Defined Test Cases / Instructions (MUST FOLLOW):
+${customInstructions}
+
+`;
+    }
+
+    prompt += `Instructions:
 1. Analyze the code carefully
 2. Identify all functions, classes, and their behaviors
 3. Generate comprehensive unit tests covering:
@@ -46,6 +66,8 @@ Instructions:
    - Error handling and exceptions
 4. Use meaningful test names that describe the scenario
 5. Include comments explaining complex test cases
+${referenceCode ? '6. Strictly follow the coding style, naming convention, and libraries used in the Reference Code above.' : '6. Follow best practices for the specified testing framework.'}
+${customInstructions ? '7. Ensure all User Defined Test Cases are implemented.' : ''}
 
 Output ONLY the test code. Do not include explanations outside the code.
 If using Markdown, wrap code in a single \`\`\`${language} block.

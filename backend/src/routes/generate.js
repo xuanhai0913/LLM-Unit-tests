@@ -42,6 +42,8 @@ router.post('/', optionalAuth, async (req, res, next) => {
             llmProvider,
             userApiKey,
             useDashboardProxy = false,
+            referenceCode,
+            customInstructions
         } = req.body;
 
         // Validate input
@@ -90,7 +92,14 @@ router.post('/', optionalAuth, async (req, res, next) => {
         // Use Dashboard proxy if license is active and no personal API key
         if (useDashboard && user?.license_key) {
             try {
-                const prompt = buildTestGenerationPrompt({ code, specs, framework, language });
+                const prompt = buildTestGenerationPrompt({
+                    code,
+                    specs,
+                    framework,
+                    language,
+                    referenceCode,
+                    customInstructions
+                });
                 const rawResponse = await generateWithDashboardProxy(user.license_key, prompt);
 
                 const generationTime = Date.now() - startTime;
@@ -126,6 +135,8 @@ router.post('/', optionalAuth, async (req, res, next) => {
                 language,
                 provider: providerToUse,
                 userApiKey: apiKeyToUse,
+                referenceCode,
+                customInstructions
             });
         }
 
@@ -173,7 +184,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
  * Preview the prompt without calling LLM (for debugging)
  */
 router.post('/preview', (req, res) => {
-    const { code, specs, framework = 'pytest', language = 'python' } = req.body;
+    const { code, specs, framework = 'pytest', language = 'python', referenceCode, customInstructions } = req.body;
 
     if (!code) {
         return res.status(400).json({ error: 'Source code is required' });
@@ -181,7 +192,14 @@ router.post('/preview', (req, res) => {
 
     // Dynamic import for ESM
     import('../utils/prompts.js').then(({ buildTestGenerationPrompt }) => {
-        const prompt = buildTestGenerationPrompt({ code, specs, framework, language });
+        const prompt = buildTestGenerationPrompt({
+            code,
+            specs,
+            framework,
+            language,
+            referenceCode,
+            customInstructions
+        });
         res.json({
             prompt,
             estimatedTokens: Math.ceil(prompt.length / 4),

@@ -40,12 +40,14 @@ function Home() {
     const { user, isAuthenticated } = useAuth();
     const [code, setCode] = useState(SAMPLE_CODE);
     const [specs, setSpecs] = useState('');
+    const [referenceCode, setReferenceCode] = useState('');
     const [framework, setFramework] = useState('pytest');
     const [language, setLanguage] = useState('python');
     const [llmProvider, setLlmProvider] = useState('gemini');
     const [generatedTests, setGeneratedTests] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [generationTime, setGenerationTime] = useState(null);
+    const [showReference, setShowReference] = useState(false);
 
     // Set default provider from user preferences
     useEffect(() => {
@@ -71,7 +73,14 @@ function Home() {
                 framework,
                 language,
                 llmProvider,
+                referenceCode: referenceCode || undefined,
+                customInstructions: specs || undefined, // Map specs to customInstructions too if needed, or just let specs handle it.
+                // Actually, let's keep specs as specs, and if I want specific instructions, I rely on proper prompting. 
+                // The new prompt uses "specs" for Specs and "customInstructions" for User Defined Cases.
+                // I will map the UI "specs" field to BOTH for now or just "customInstructions" if I want to enforce it.
+                // Let's pass `specs` as `customInstructions` to ensure it falls into the "MUST FOLLOW" block which is stronger.
             });
+            // Note: generateTests in api.js accepts customInstructions. I'll pass specs to it.
 
             if (result.success) {
                 setGeneratedTests(result.data.generatedTests);
@@ -246,19 +255,60 @@ function Home() {
                 </div>
             </div>
 
-            {/* Bottom Specs Section */}
+            {/* Bottom Actions and Reference/Specs */}
             <div className="bottom-actions">
-                <div className="specs-box">
-                    <label className="specs-label">
-                        <FiSettings size={14} />
-                        Specifications (Optional)
-                    </label>
-                    <textarea
-                        className="specs-textarea"
-                        placeholder="Add requirements, edge cases, or specific behaviors to test..."
-                        value={specs}
-                        onChange={(e) => setSpecs(e.target.value)}
-                    />
+                <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+
+                    {/* Manual Specs / Test Cases */}
+                    <div className="specs-box" style={{ flex: 1 }}>
+                        <label className="specs-label">
+                            <FiSettings size={14} />
+                            Requirements / Manual Test Cases
+                        </label>
+                        <textarea
+                            className="specs-textarea"
+                            placeholder="Example: Test divide by zero, Test empty string input..."
+                            value={specs}
+                            onChange={(e) => setSpecs(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Toggle Reference Code */}
+                    <div className="specs-box" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <label className="specs-label">
+                                <FiCopy size={14} />
+                                Reference Test Code (Few-shot)
+                            </label>
+                            <button
+                                className="btn btn-sm btn-secondary"
+                                onClick={() => setShowReference(!showReference)}
+                                style={{ padding: '2px 8px', fontSize: '12px' }}
+                            >
+                                {showReference ? 'Hide' : 'Show'}
+                            </button>
+                        </div>
+
+                        {showReference ? (
+                            <div style={{ flex: 1, minHeight: '100px', border: '1px solid #334155', borderRadius: '4px', overflow: 'hidden' }}>
+                                <CodeEditor
+                                    value={referenceCode}
+                                    onChange={setReferenceCode}
+                                    language={language}
+                                    height="100%"
+                                />
+                            </div>
+                        ) : (
+                            <div
+                                className="specs-textarea"
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer' }}
+                                onClick={() => setShowReference(true)}
+                            >
+                                Click code to add Example/Reference Test Code...
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -23,7 +23,7 @@ api.interceptors.request.use((config) => {
 /**
  * Generate unit tests from source code
  */
-export async function generateTests({ code, specs, framework, language, llmProvider }) {
+export async function generateTests({ code, specs, framework, language, llmProvider, referenceCode, customInstructions }) {
     const response = await api.post('/generate', {
         code,
         specs,
@@ -31,6 +31,8 @@ export async function generateTests({ code, specs, framework, language, llmProvi
         language,
         llmProvider,
         saveHistory: true,
+        referenceCode,
+        customInstructions
     });
     return response.data;
 }

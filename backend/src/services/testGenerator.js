@@ -17,7 +17,7 @@ class TestGenerator {
      * @param {string} [params.userApiKey] - User's own API key
      * @returns {Promise<object>} Generated tests and metadata
      */
-    async generateTests({ code, specs = '', framework = 'pytest', language = 'python', provider, userApiKey }) {
+    async generateTests({ code, specs = '', framework = 'pytest', language = 'python', provider, userApiKey, referenceCode, customInstructions }) {
         if (!code || code.trim().length === 0) {
             throw new Error('Source code is required');
         }
@@ -30,6 +30,8 @@ class TestGenerator {
             specs,
             framework,
             language,
+            referenceCode,
+            customInstructions
         });
 
         // Call LLM API with optional user key
