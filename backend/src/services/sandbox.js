@@ -46,12 +46,14 @@ class SandboxService {
 
             // Execute
             const result = await this._runCommand(command);
+            const details = this._parseOutput(language, result.stdout + result.stderr);
 
             return {
                 success: true,
                 passed: result.exitCode === 0,
                 output: result.stdout + (result.stderr ? '\nErrors:\n' + result.stderr : ''),
-                exitCode: result.exitCode
+                exitCode: result.exitCode,
+                details
             };
 
         } catch (error) {
@@ -60,12 +62,61 @@ class SandboxService {
                 success: false,
                 passed: false,
                 output: error.message || 'Execution failed',
-                error: error.message
+                error: error.message,
+                details: { total: 0, passed: 0, failed: 1, error: error.message }
             };
         } finally {
             // Cleanup
             this._cleanup(runDir);
         }
+    }
+
+    _parseOutput(language, output) {
+        const details = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            errors: 0,
+            duration: '',
+            tests: []
+        };
+
+        if (language === 'python') {
+            // Pytest summary: "======= 1 failed, 2 passed in 0.14s ======="
+            const summaryRegex = /==+ (?:(\d+) failed, )?(?:(\d+) passed, )?(?:(\d+) errors?, )?(?:(\d+) warnings? )?in ([\d.]+)s ==+/;
+            const match = output.match(summaryRegex);
+
+            if (match) {
+                details.failed = parseInt(match[1] || 0);
+                details.passed = parseInt(match[2] || 0);
+                details.errors = parseInt(match[3] || 0);
+                details.total = details.passed + details.failed + details.errors;
+                details.duration = match[5] + 's';
+            }
+
+            // Simple parsing for collected items
+            const collectedMatch = output.match(/collected (\d+) items/);
+            if (collectedMatch && details.total === 0) {
+                details.total = parseInt(collectedMatch[1]);
+            }
+        } else if (language === 'javascript' || language === 'typescript') {
+            // Jest summary: "Tests:       1 failed, 2 passed, 3 total"
+            const summaryRegex = /Tests:\s+(?:(\d+) failed,\s+)?(?:(\d+) passed,\s+)?(\d+) total/;
+            const match = output.match(summaryRegex);
+
+            if (match) {
+                details.failed = parseInt(match[1] || 0);
+                details.passed = parseInt(match[2] || 0);
+                details.total = parseInt(match[3] || 0);
+            }
+
+            const timeMatch = output.match(/Time:\s+([\d.]+) s/);
+            if (timeMatch) {
+                details.duration = timeMatch[1] + 's';
+            }
+        }
+
+        return details;
     }
 
     _runCommand(command) {

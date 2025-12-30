@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu, FiPlay, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu, FiPlay, FiX, FiCheckCircle, FiAlertCircle, FiActivity, FiList, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
 import { generateTests, runTests } from '../services/api';
@@ -49,9 +49,10 @@ function Home() {
     const [generationTime, setGenerationTime] = useState(null);
 
     const [showReference, setShowReference] = useState(false);
-    const [isRunning, setIsRunning] = useState(false);
-    const [testResults, setTestResults] = useState(null);
     const [showResults, setShowResults] = useState(false);
+    const [testResults, setTestResults] = useState(null);
+    const [resultsTab, setResultsTab] = useState('overview');
+    const [isRunning, setIsRunning] = useState(false);
 
     // Set default provider from user preferences
     useEffect(() => {
@@ -386,57 +387,71 @@ function Home() {
                                 </div>
                             ) : testResults ? (
                                 <div className="sandbox-results-view fade-in">
-                                    {/* Header Summary */}
-                                    <div className="sandbox-header-banner">
-                                        <div className="sandbox-status-chip">
-                                            {testResults.passed ? (
-                                                <><FiCheckCircle style={{ color: 'var(--success)' }} /> <span>All Tests Passed</span></>
-                                            ) : (
-                                                <><FiAlertCircle style={{ color: 'var(--error)' }} /> <span>Test Suite Failed</span></>
-                                            )}
+                                    {/* Tabs */}
+                                    <div className="sandbox-tabs">
+                                        <div
+                                            className={`sandbox-tab ${resultsTab === 'overview' ? 'active' : ''}`}
+                                            onClick={() => setResultsTab('overview')}
+                                        >
+                                            <FiActivity /> Overview
                                         </div>
-                                        <div className="sandbox-stats-compact">
-                                            <div className="stat-item">
-                                                <span className="stat-item-label">Status</span>
-                                                <span className={`stat-item-value ${testResults.passed ? 'success' : 'error'}`}>
-                                                    {testResults.passed ? 'PASSED' : 'FAILED'}
-                                                </span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-item-label">Exit Code</span>
-                                                <span className="stat-item-value">{testResults.exitCode}</span>
-                                            </div>
+                                        <div
+                                            className={`sandbox-tab ${resultsTab === 'logs' ? 'active' : ''}`}
+                                            onClick={() => setResultsTab('logs')}
+                                        >
+                                            <FiList /> Logs
                                         </div>
                                     </div>
 
-                                    {/* Terminal Section */}
-                                    <div className="terminal-frame">
-                                        <div className="terminal-toolbar">
-                                            <div className="terminal-controls">
-                                                <div className="t-dot t-red"></div>
-                                                <div className="t-yellow t-dot"></div>
-                                                <div className="t-green t-dot"></div>
+                                    {resultsTab === 'overview' ? (
+                                        <div className="sandbox-stats-grid fade-in">
+                                            <div className="stat-card total">
+                                                <span className="stat-card-label">Total Tests</span>
+                                                <span className="stat-card-value">{testResults.details?.total || 0}</span>
                                             </div>
-                                            <div className="terminal-tab">Output Log</div>
+                                            <div className="stat-card passed">
+                                                <span className="stat-card-label">Passed</span>
+                                                <span className="stat-card-value">{testResults.details?.passed || 0}</span>
+                                            </div>
+                                            <div className="stat-card failed">
+                                                <span className="stat-card-label">Failed</span>
+                                                <span className="stat-card-value">{testResults.details?.failed || 0}</span>
+                                            </div>
+                                            <div className="stat-card time">
+                                                <span className="stat-card-label">Duration</span>
+                                                <span className="stat-card-value">{testResults.details?.duration || '0s'}</span>
+                                            </div>
                                         </div>
-                                        <div className="terminal-scroll">
-                                            <pre>
-                                                {testResults.output ? testResults.output.split('\n').map((line, i) => {
-                                                    let className = 'output-line';
-                                                    if (line.includes('PASSED') || line.includes('passed')) className += ' line-success';
-                                                    else if (line.includes('FAILED') || line.includes('failed') || line.includes('Error:')) className += ' line-error';
-                                                    else if (line.includes('WARNING') || line.includes('warning')) className += ' line-warning';
-                                                    else if (line.startsWith('====') || line.startsWith('----')) className += ' line-dim';
+                                    ) : (
+                                        /* Terminal Section */
+                                        <div className="terminal-frame">
+                                            <div className="terminal-toolbar">
+                                                <div className="terminal-controls">
+                                                    <div className="t-dot t-red"></div>
+                                                    <div className="t-yellow t-dot"></div>
+                                                    <div className="t-green t-dot"></div>
+                                                </div>
+                                                <div className="terminal-tab">Output Log</div>
+                                            </div>
+                                            <div className="terminal-scroll">
+                                                <pre>
+                                                    {testResults.output ? testResults.output.split('\n').map((line, i) => {
+                                                        let className = 'output-line';
+                                                        if (line.includes('PASSED') || line.includes('passed')) className += ' line-success';
+                                                        else if (line.includes('FAILED') || line.includes('failed') || line.includes('Error:')) className += ' line-error';
+                                                        else if (line.includes('WARNING') || line.includes('warning')) className += ' line-warning';
+                                                        else if (line.startsWith('====') || line.startsWith('----')) className += ' line-dim';
 
-                                                    return (
-                                                        <div key={i} className={className}>
-                                                            {line}
-                                                        </div>
-                                                    );
-                                                }) : <div className="line-dim">No output captured.</div>}
-                                            </pre>
+                                                        return (
+                                                            <div key={i} className={className}>
+                                                                {line}
+                                                            </div>
+                                                        );
+                                                    }) : <div className="line-dim">No output captured.</div>}
+                                                </pre>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             ) : null}
                         </div>

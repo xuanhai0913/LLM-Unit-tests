@@ -1295,3 +1295,120 @@ body::before {
 .line-dim {
   color: #8b949e;
 }
+
+/* ===== Detailed Sandbox Results ===== */
+
+.sandbox-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+}
+
+.stat-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.stat-card-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stat-card-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.stat-card.total {
+  border-left: 3px solid #6366f1;
+}
+
+.stat-card.passed {
+  border-left: 3px solid var(--success);
+}
+
+.stat-card.failed {
+  border-left: 3px solid var(--error);
+}
+
+.stat-card.time {
+  border-left: 3px solid var(--primary-yellow);
+}
+
+.stat-card.passed .stat-card-value {
+  color: var(--success);
+}
+
+.stat-card.failed .stat-card-value {
+  color: var(--error);
+}
+
+.stat-card.total .stat-card-value {
+  color: #818cf8;
+}
+
+.stat-card.time .stat-card-value {
+  color: var(--primary-yellow);
+}
+
+.sandbox-tabs {
+  display: flex;
+  gap: 2.5rem;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.sandbox-tab {
+  padding: 1.25rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sandbox-tab:hover {
+  color: var(--text-primary);
+}
+
+.sandbox-tab.active {
+  color: var(--primary-orange);
+}
+
+.sandbox-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-orange);
+  box-shadow: 0 0 12px var(--primary-orange);
+}
