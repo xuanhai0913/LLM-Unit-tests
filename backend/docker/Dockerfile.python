@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+# Install testing frameworks
+RUN pip install unittest2 pytest
+
+WORKDIR /app
+
+# Run as non-root user (optional but recommended for security, though Docker's user mapping handles some)
+# RUN useradd -m appuser
+# USER appuser
+
+CMD ["pytest"]

@@ -8,6 +8,7 @@ import historyRoutes from './routes/history.js';
 import authRoutes from './routes/auth.js';
 import settingsRoutes from './routes/settings.js';
 import keysRoutes from './routes/keys.js';
+import testRoutes from './routes/test.js';
 import { initDatabase } from './models/index.js';
 
 const app = express();
@@ -56,6 +57,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/keys', keysRoutes);
 app.use('/api/generate', generateRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/test', testRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -38,6 +38,18 @@ export async function generateTests({ code, specs, framework, language, llmProvi
 }
 
 /**
+ * Run generated unit tests
+ */
+export async function runTests({ code, tests, language }) {
+    const response = await api.post('/test/run', {
+        code,
+        tests,
+        language
+    });
+    return response.data;
+}
+
+/**
  * Get generation history
  */
 export async function getHistory(limit = 50, offset = 0) {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu } from 'react-icons/fi';
+import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu, FiPlay, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
-import { generateTests } from '../services/api';
+import { generateTests, runTests } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const SAMPLE_CODE = `def calculate_average(numbers):
@@ -47,7 +47,11 @@ function Home() {
     const [generatedTests, setGeneratedTests] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [generationTime, setGenerationTime] = useState(null);
+
     const [showReference, setShowReference] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
+    const [testResults, setTestResults] = useState(null);
+    const [showResults, setShowResults] = useState(false);
 
     // Set default provider from user preferences
     useEffect(() => {
@@ -115,6 +119,43 @@ function Home() {
             a.click();
             URL.revokeObjectURL(url);
             toast.success('Downloaded!');
+        }
+    }
+
+
+    const handleRunTests = async () => {
+        if (!code || !generatedTests) {
+            toast.error('No code or tests to run');
+            return;
+        }
+
+        setIsRunning(true);
+        setTestResults(null);
+        setShowResults(true);
+
+        try {
+            const result = await runTests({
+                code,
+                tests: generatedTests,
+                language
+            });
+
+            setTestResults(result);
+            if (result.success) {
+                if (result.passed) {
+                    toast.success('Tests Passed!');
+                } else {
+                    toast.error('Tests Failed');
+                }
+            } else {
+                toast.error(result.error || 'Execution failed');
+            }
+        } catch (error) {
+            console.error('Run error:', error);
+            toast.error('Failed to run tests');
+            setTestResults({ success: false, output: error.message });
+        } finally {
+            setIsRunning(false);
         }
     };
 
@@ -221,6 +262,15 @@ function Home() {
                                 <button className="btn btn-secondary btn-icon" onClick={handleDownload} title="Download">
                                     <FiDownload />
                                 </button>
+                                <button
+                                    className="btn btn-primary btn-icon"
+                                    onClick={handleRunTests}
+                                    title="Run Tests"
+                                    disabled={isRunning}
+                                    style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+                                >
+                                    {isRunning ? <span className="loading-spinner" style={{ width: 14, height: 14 }}></span> : <FiPlay />}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -311,6 +361,88 @@ function Home() {
 
                 </div>
             </div>
+            {/* Test Results Modal */}
+            {showResults && (
+                <div className="modal-backdrop" onClick={() => setShowResults(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%' }}>
+                        <div className="panel-header">
+                            <div className="panel-title">
+                                <FiPlay className="panel-title-icon" />
+                                Sandbox Execution
+                            </div>
+                            <button className="btn btn-secondary btn-icon" onClick={() => setShowResults(false)}>
+                                <FiX />
+                            </button>
+                        </div>
+                        <div className="panel-body" style={{ padding: 0, minHeight: '500px' }}>
+                            {isRunning ? (
+                                <div className="loading-overlay">
+                                    <div className="loading-pulse">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                    <p className="loading-text">Preparing Docker container...</p>
+                                </div>
+                            ) : testResults ? (
+                                <div className="sandbox-results-view fade-in">
+                                    {/* Header Summary */}
+                                    <div className="sandbox-header-banner">
+                                        <div className="sandbox-status-chip">
+                                            {testResults.passed ? (
+                                                <><FiCheckCircle style={{ color: 'var(--success)' }} /> <span>All Tests Passed</span></>
+                                            ) : (
+                                                <><FiAlertCircle style={{ color: 'var(--error)' }} /> <span>Test Suite Failed</span></>
+                                            )}
+                                        </div>
+                                        <div className="sandbox-stats-compact">
+                                            <div className="stat-item">
+                                                <span className="stat-item-label">Status</span>
+                                                <span className={`stat-item-value ${testResults.passed ? 'success' : 'error'}`}>
+                                                    {testResults.passed ? 'PASSED' : 'FAILED'}
+                                                </span>
+                                            </div>
+                                            <div className="stat-item">
+                                                <span className="stat-item-label">Exit Code</span>
+                                                <span className="stat-item-value">{testResults.exitCode}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Terminal Section */}
+                                    <div className="terminal-frame">
+                                        <div className="terminal-toolbar">
+                                            <div className="terminal-controls">
+                                                <div className="t-dot t-red"></div>
+                                                <div className="t-yellow t-dot"></div>
+                                                <div className="t-green t-dot"></div>
+                                            </div>
+                                            <div className="terminal-tab">Output Log</div>
+                                        </div>
+                                        <div className="terminal-scroll">
+                                            <pre>
+                                                {testResults.output ? testResults.output.split('\n').map((line, i) => {
+                                                    let className = 'output-line';
+                                                    if (line.includes('PASSED') || line.includes('passed')) className += ' line-success';
+                                                    else if (line.includes('FAILED') || line.includes('failed') || line.includes('Error:')) className += ' line-error';
+                                                    else if (line.includes('WARNING') || line.includes('warning')) className += ' line-warning';
+                                                    else if (line.startsWith('====') || line.startsWith('----')) className += ' line-dim';
+
+                                                    return (
+                                                        <div key={i} className={className}>
+                                                            {line}
+                                                        </div>
+                                                    );
+                                                }) : <div className="line-dim">No output captured.</div>}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

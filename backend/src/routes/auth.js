@@ -10,42 +10,54 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 
 // Configure Passport Google Strategy
-if (config.google.clientId && config.google.clientSecret) {
-    passport.use(new GoogleStrategy({
-        clientID: config.google.clientId,
-        clientSecret: config.google.clientSecret,
-        callbackURL: config.google.callbackUrl,
-    }, async (accessToken, refreshToken, profile, done) => {
-        try {
-            // Find or create user
-            let user = await User.findOne({ where: { google_id: profile.id } });
+passport.use(new GoogleStrategy({
+    clientID: config.google.clientId,
+    clientSecret: config.google.clientSecret,
+    callbackURL: config.google.callbackUrl,
+}, async (accessToken, refreshToken, profile, done) => {
+    console.log('Google Auth Configured!');
+    try {
+        console.log('Google Profile:', JSON.stringify(profile));
+        // Find or create user
+        let user = await User.findOne({ where: { google_id: profile.id } });
+        console.log('User found by google_id:', user ? user.id : 'null');
 
-            if (!user) {
-                // Check if email already exists
-                user = await User.findOne({ where: { email: profile.emails[0].value } });
-
-                if (user) {
-                    // Link Google account to existing user
-                    user.google_id = profile.id;
-                    user.avatar = profile.photos?.[0]?.value || user.avatar;
-                    await user.save();
-                } else {
-                    // Create new user
-                    user = await User.create({
-                        email: profile.emails[0].value,
-                        name: profile.displayName,
-                        google_id: profile.id,
-                        avatar: profile.photos?.[0]?.value,
-                    });
-                }
+        if (!user) {
+            const email = profile.emails?.[0]?.value;
+            if (!email) {
+                console.error('No email found in Google profile');
+                return done(new Error('No email found in Google profile'), null);
             }
 
-            return done(null, user);
-        } catch (error) {
-            return done(error, null);
+            // Check if email already exists
+            user = await User.findOne({ where: { email } });
+            console.log('User found by email:', user ? user.id : 'null');
+
+            if (user) {
+                // Link Google account to existing user
+                console.log('Linking Google account to existing user');
+                user.google_id = profile.id;
+                user.avatar = profile.photos?.[0]?.value || user.avatar;
+                await user.save();
+            } else {
+                // Create new user
+                console.log('Creating new user');
+                user = await User.create({
+                    email: email,
+                    name: profile.displayName,
+                    google_id: profile.id,
+                    avatar: profile.photos?.[0]?.value,
+                });
+            }
         }
-    }));
-}
+
+        return done(null, user);
+    } catch (error) {
+        console.error('Google Auth Strategy Error:', error);
+        return done(error, null);
+    }
+}));
+
 
 passport.serializeUser((user, done) => {
     done(null, user.id);
