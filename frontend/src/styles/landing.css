@@ -252,59 +252,171 @@
     line-height: 1.5;
 }
 
-/* How It Works */
+/* How It Works - Apple-Style Scroll Reveal */
 .how-it-works-section {
-    padding: 6rem 0;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: var(--radius-lg);
-    margin: 2rem 0;
+    padding: 8rem 0;
+    background: linear-gradient(180deg, transparent, rgba(249, 115, 22, 0.02) 50%, transparent);
 }
 
-.steps-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    max-width: 900px;
+.workflow-steps {
+    max-width: 1100px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8rem;
 }
 
-.step {
-    flex: 1;
-    text-align: center;
+.workflow-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: center;
     position: relative;
+    opacity: 0;
+    transform: translateY(60px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.step-number {
-    width: 40px;
-    height: 40px;
-    background: var(--bg-tertiary);
-    border: 2px solid var(--primary-orange);
+.workflow-item.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Alternate layout for even items */
+.workflow-item:nth-child(even) {
+    grid-template-columns: 1fr 1fr;
+}
+
+.workflow-item:nth-child(even) .step-content {
+    order: 2;
+}
+
+.workflow-item:nth-child(even) .step-visual {
+    order: 1;
+}
+
+.step-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.step-number-badge {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary-orange), var(--primary-yellow));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    color: var(--primary-orange);
-    margin: 0 auto 1.5rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
 }
 
-.step h3 {
+.step-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.2;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.step-description {
     font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.step p {
-    font-size: 0.9rem;
     color: var(--text-secondary);
+    line-height: 1.7;
 }
 
-.step-arrow {
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    opacity: 0.5;
+.step-visual {
+    position: relative;
 }
+
+.step-gif {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    transition: transform 0.4s ease;
+    background: #1e1e24;
+}
+
+.workflow-item.revealed .step-gif {
+    animation: scaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.step-gif:hover {
+    transform: scale(1.03);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .workflow-steps {
+        gap: 6rem;
+    }
+
+    .workflow-item {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+    }
+
+    .workflow-item:nth-child(even) .step-content,
+    .workflow-item:nth-child(even) .step-visual {
+        order: 0;
+    }
+
+    .step-content {
+        align-items: center;
+        padding: 0;
+    }
+
+    .step-title {
+        font-size: 1.75rem;
+    }
+
+    .step-number-badge {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .workflow-steps {
+        gap: 5rem;
+    }
+
+    .step-title {
+        font-size: 1.5rem;
+    }
+
+    .step-description {
+        font-size: 1rem;
+    }
+
+    .step-number-badge {
+        width: 52px;
+        height: 52px;
+        font-size: 1.5rem;
+    }
+}
+
 
 /* CTA Section */
 .cta-section {
