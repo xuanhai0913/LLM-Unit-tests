@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu, FiPlay, FiX } from 'react-icons/fi';
+import { FiZap, FiCopy, FiDownload, FiCode, FiFileText, FiSettings, FiCpu, FiPlay, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
 import { generateTests, runTests } from '../services/api';
