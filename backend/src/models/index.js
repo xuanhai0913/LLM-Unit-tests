@@ -68,13 +68,13 @@ Generation.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 export async function initDatabase() {
     try {
         await sequelize.authenticate();
-        console.log('✅ Database connection established');
+        console.log(' Database connection established');
 
         // Sync models (create tables if not exist)
         await sequelize.sync({ alter: true });
-        console.log('✅ Database models synchronized');
+        console.log(' Database models synchronized');
     } catch (error) {
-        console.error('❌ Database connection failed:', error);
+        console.error(' Database connection failed:', error);
         throw error;
     }
 }

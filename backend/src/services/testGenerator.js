@@ -22,7 +22,7 @@ class TestGenerator {
             throw new Error('Source code is required');
         }
 
-        console.log(`📝 Generating ${framework} tests for ${language} code using ${provider || 'default'} provider...`);
+        console.log(` Generating ${framework} tests for ${language} code using ${provider || 'default'} provider...`);
 
         // Build the prompt
         const prompt = buildTestGenerationPrompt({
@@ -49,7 +49,7 @@ class TestGenerator {
         // Validate the generated code (basic check)
         const isValid = this._validateCode(testCode, language);
 
-        console.log(`✅ Tests generated in ${generationTime}ms`);
+        console.log(` Tests generated in ${generationTime}ms`);
 
         return {
             generatedTests: testCode,

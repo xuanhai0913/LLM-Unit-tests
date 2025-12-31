@@ -55,7 +55,7 @@ class DeepseekClient {
      */
     async _makeRequest(payload, attempt = 1) {
         try {
-            console.log(`🔄 API request attempt ${attempt}/${this.maxRetries}`);
+            console.log(` API request attempt ${attempt}/${this.maxRetries}`);
 
             const response = await this.client.post('/chat/completions', payload);
 
@@ -65,11 +65,11 @@ class DeepseekClient {
 
             throw new Error('Unexpected API response format');
         } catch (error) {
-            console.error(`❌ API request failed: ${error.message}`);
+            console.error(` API request failed: ${error.message}`);
 
             if (attempt < this.maxRetries) {
                 const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-                console.log(`⏳ Retrying in ${delay / 1000}s...`);
+                console.log(` Retrying in ${delay / 1000}s...`);
                 await this._sleep(delay);
                 return this._makeRequest(payload, attempt + 1);
             }
