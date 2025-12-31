@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { FiSettings, FiKey, FiSave, FiCheck, FiX, FiCpu } from 'react-icons/fi';
+import { FiSettings, FiKey, FiSave, FiCheck, FiX, FiCpu, FiTrash2 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { getSettings, updateLlmPreference, updateApiKeys, validateKey, getKeyStatus } from '../services/auth';
+import { getSettings, updateLlmPreference, updateApiKeys, validateKey, getKeyStatus, removeLicenseKey } from '../services/auth';
 
 function Settings() {
     const { user, refreshUser } = useAuth();
@@ -82,6 +82,32 @@ function Settings() {
         }
     };
 
+    const handleRemoveApiKey = async (provider) => {
+        if (!window.confirm(`Bạn có chắc muốn xóa ${provider === 'gemini' ? 'Gemini' : 'Deepseek'} API Key?`)) {
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const payload = provider === 'gemini'
+                ? { gemini_api_key: '' }
+                : { deepseek_api_key: '' };
+
+            const response = await updateApiKeys(payload);
+
+            if (response.success) {
+                setHasGeminiKey(response.data.hasGeminiKey);
+                setHasDeepseekKey(response.data.hasDeepseekKey);
+                toast.success(`Đã xóa ${provider === 'gemini' ? 'Gemini' : 'Deepseek'} API Key`);
+                refreshUser();
+            }
+        } catch (error) {
+            toast.error('Xóa thất bại');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleValidateLicenseKey = async () => {
         if (!licenseKey) {
             toast.error('Vui lòng nhập license key');
@@ -101,6 +127,26 @@ function Settings() {
             }
         } catch (error) {
             toast.error('Xác thực thất bại');
+        } finally {
+            setIsValidating(false);
+        }
+    };
+
+    const handleRemoveLicenseKey = async () => {
+        if (!window.confirm('Bạn có chắc muốn xóa License Key? Bạn sẽ mất quyền truy cập tài nguyên Premium.')) {
+            return;
+        }
+
+        setIsValidating(true);
+        try {
+            const response = await removeLicenseKey();
+            if (response.success) {
+                setLicenseStatus('none');
+                toast.success('Đã xóa License Key');
+                refreshUser();
+            }
+        } catch (error) {
+            toast.error('Xóa thất bại');
         } finally {
             setIsValidating(false);
         }
@@ -188,7 +234,18 @@ function Settings() {
                             onChange={(e) => setGeminiKey(e.target.value)}
                             placeholder={hasGeminiKey ? '••••••••••••••••' : 'AIza...'}
                         />
-                        {hasGeminiKey && <span className="key-saved"><FiCheck /> Đã lưu</span>}
+                        {hasGeminiKey && (
+                            <div className="key-actions">
+                                <span className="key-saved"><FiCheck /> Đã lưu</span>
+                                <button
+                                    className="btn-icon danger"
+                                    onClick={() => handleRemoveApiKey('gemini')}
+                                    title="Xóa API Key"
+                                >
+                                    <FiTrash2 />
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <small>
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">
@@ -206,7 +263,18 @@ function Settings() {
                             onChange={(e) => setDeepseekKey(e.target.value)}
                             placeholder={hasDeepseekKey ? '••••••••••••••••' : 'sk-...'}
                         />
-                        {hasDeepseekKey && <span className="key-saved"><FiCheck /> Đã lưu</span>}
+                        {hasDeepseekKey && (
+                            <div className="key-actions">
+                                <span className="key-saved"><FiCheck /> Đã lưu</span>
+                                <button
+                                    className="btn-icon danger"
+                                    onClick={() => handleRemoveApiKey('deepseek')}
+                                    title="Xóa API Key"
+                                >
+                                    <FiTrash2 />
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <small>
                         <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">
@@ -248,14 +316,25 @@ function Settings() {
                             value={licenseKey}
                             onChange={(e) => setLicenseKey(e.target.value)}
                             placeholder="Nhập license key..."
+                            disabled={licenseStatus === 'active'}
                         />
-                        <button
-                            className="btn btn-secondary"
-                            onClick={handleValidateLicenseKey}
-                            disabled={isValidating || !licenseKey}
-                        >
-                            {isValidating ? 'Đang xác thực...' : 'Xác thực'}
-                        </button>
+                        {licenseStatus === 'active' ? (
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleRemoveLicenseKey}
+                                disabled={isValidating}
+                            >
+                                <FiTrash2 /> Gỡ Key
+                            </button>
+                        ) : (
+                            <button
+                                className="btn btn-secondary"
+                                onClick={handleValidateLicenseKey}
+                                disabled={isValidating || !licenseKey}
+                            >
+                                {isValidating ? 'Đang xác thực...' : 'Xác thực'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

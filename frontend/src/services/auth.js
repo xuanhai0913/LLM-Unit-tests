@@ -151,6 +151,14 @@ export async function getKeyStatus() {
     return response.data;
 }
 
+export async function removeLicenseKey() {
+    const token = getAccessToken();
+    const response = await authApi.delete('/keys', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+}
+
 export default {
     register,
     login,
@@ -164,4 +172,5 @@ export default {
     updateApiKeys,
     validateKey,
     getKeyStatus,
+    removeLicenseKey,
 };
