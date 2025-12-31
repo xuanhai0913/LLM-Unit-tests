@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
 import Settings from './pages/Settings';
+import ImproveTests from './pages/ImproveTests';
 import AuthCallback from './pages/AuthCallback';
 import './styles/index.css';
 
@@ -77,6 +78,7 @@ function AppContent() {
 
                     {/* Main app - accessible without login but with limited features */}
                     <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
+                    <Route path="/improve" element={<ImproveTests />} />
                     <Route path="/history" element={<History />} />
 
                     {/* Protected routes */}

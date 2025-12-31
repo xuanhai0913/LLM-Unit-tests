@@ -1,0 +1,282 @@
+import express from 'express';
+import fs from 'fs/promises';
+import path from 'path';
+import CryptoJS from 'crypto-js';
+import testGenerator from '../services/testGenerator.js';
+import { generateWithDashboardProxy } from '../services/dashboardProxy.js';
+import { User } from '../models/index.js';
+import { optionalAuth } from '../middleware/authMiddleware.js';
+import config from '../config/index.js';
+
+const router = express.Router();
+
+/**
+ * Decrypt API key from storage
+ */
+function decryptKey(encryptedKey) {
+    if (!encryptedKey) return null;
+    const bytes = CryptoJS.AES.decrypt(encryptedKey, config.encryption.key);
+    return bytes.toString(CryptoJS.enc.Utf8);
+}
+
+/**
+ * Build improvement prompt for LLM
+ */
+function buildImprovementPrompt({ sourceCode, existingTests, language, framework, gaps }) {
+    return `You are an expert test engineer improving an existing test suite.
+
+## SOURCE CODE TO TEST:
+\`\`\`${language}
+${sourceCode}
+\`\`\`
+
+## EXISTING TESTS (Already written - DO NOT duplicate):
+\`\`\`${language}
+${existingTests}
+\`\`\`
+
+## COVERAGE GAPS TO FILL:
+${gaps && gaps.length > 0 ? gaps.map((g, i) => `${i + 1}. ${g}`).join('\n') : '- Edge cases not covered\n- Error handling\n- Boundary conditions'}
+
+## YOUR TASK:
+Generate ADDITIONAL test cases to fill the coverage gaps.
+
+## IMPORTANT RULES:
+1. DO NOT duplicate any existing tests
+2. Focus ONLY on the missing areas listed above
+3. Follow the EXACT same style and patterns as the existing tests
+4. Use the same test framework (${framework})
+5. Include descriptive test names that explain what they test
+6. Include edge cases and error scenarios
+7. Add comments explaining what each new test covers
+
+## OUTPUT FORMAT:
+Return ONLY the new test code to ADD to the existing file.
+Do NOT include any explanation, just the test code.
+The code should be ready to append to the existing test file.
+
+## GENERATE ADDITIONAL TESTS:`;
+}
+
+/**
+ * Parse existing test file to extract test info
+ */
+function parseExistingTests(testCode, language) {
+    let testCount = 0;
+    let testNames = [];
+
+    if (language === 'python') {
+        // Match def test_xxx functions
+        const matches = testCode.match(/def test_\w+/g) || [];
+        testCount = matches.length;
+        testNames = matches.map(m => m.replace('def ', ''));
+    } else {
+        // Match it('xxx', ... or test('xxx', ...
+        const itMatches = testCode.match(/(?:it|test)\s*\(\s*['"`]([^'"`]+)['"`]/g) || [];
+        testCount = itMatches.length;
+        testNames = itMatches.map(m => {
+            const match = m.match(/['"`]([^'"`]+)['"`]/);
+            return match ? match[1] : '';
+        });
+    }
+
+    return { testCount, testNames };
+}
+
+/**
+ * Identify coverage gaps based on source code and existing tests
+ */
+function identifyGaps(sourceCode, existingTests, language) {
+    const gaps = [];
+
+    // Common patterns to check
+    const patterns = {
+        errorHandling: /throw|catch|error|exception/gi,
+        asyncCode: /async|await|promise|then|catch/gi,
+        conditionals: /if|else|switch|case/gi,
+        loops: /for|while|forEach|map|filter|reduce/gi,
+        nullChecks: /null|undefined|![\w]/gi,
+        boundaryValues: /length|size|count|max|min|limit/gi,
+    };
+
+    // Check what's in source but might not be tested
+    if (patterns.errorHandling.test(sourceCode)) {
+        if (!/error|throw|exception|reject/i.test(existingTests)) {
+            gaps.push('Error handling scenarios');
+        }
+    }
+
+    if (patterns.asyncCode.test(sourceCode)) {
+        if (!/timeout|async.*error|reject/i.test(existingTests)) {
+            gaps.push('Async error handling and timeouts');
+        }
+    }
+
+    if (patterns.nullChecks.test(sourceCode)) {
+        if (!/null|undefined|empty/i.test(existingTests)) {
+            gaps.push('Null/undefined input handling');
+        }
+    }
+
+    if (patterns.boundaryValues.test(sourceCode)) {
+        if (!/empty|zero|large|max|min|boundary/i.test(existingTests)) {
+            gaps.push('Boundary values and edge cases');
+        }
+    }
+
+    // Default gaps if none detected
+    if (gaps.length === 0) {
+        gaps.push('Additional edge cases');
+        gaps.push('Error scenarios');
+        gaps.push('Boundary conditions');
+    }
+
+    return gaps;
+}
+
+/**
+ * POST /api/improve/analyze
+ * Analyze source and test files to identify coverage gaps
+ */
+router.post('/analyze', optionalAuth, async (req, res, next) => {
+    try {
+        const { sourceCode, existingTests, language = 'javascript', framework = 'jest' } = req.body;
+
+        if (!sourceCode || !existingTests) {
+            return res.status(400).json({
+                error: 'Both sourceCode and existingTests are required'
+            });
+        }
+
+        // Parse existing tests
+        const { testCount, testNames } = parseExistingTests(existingTests, language);
+
+        // Identify gaps
+        const gaps = identifyGaps(sourceCode, existingTests, language);
+
+        // Estimate coverage (rough heuristic based on test count vs code lines)
+        const sourceLines = sourceCode.split('\n').length;
+        const estimatedCoverage = Math.min(Math.floor((testCount * 15) / sourceLines * 100), 60);
+
+        res.json({
+            success: true,
+            data: {
+                existingTestCount: testCount,
+                existingTestNames: testNames,
+                estimatedCoverage,
+                gaps,
+                language,
+                framework
+            }
+        });
+    } catch (error) {
+        console.error('Analyze error:', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /api/improve/generate
+ * Generate additional tests to fill coverage gaps
+ */
+router.post('/generate', optionalAuth, async (req, res, next) => {
+    try {
+        const {
+            sourceCode,
+            existingTests,
+            language = 'javascript',
+            framework = 'jest',
+            gaps = [],
+            llmProvider
+        } = req.body;
+
+        if (!sourceCode || !existingTests) {
+            return res.status(400).json({
+                error: 'Both sourceCode and existingTests are required'
+            });
+        }
+
+        // Build improvement prompt
+        const prompt = buildImprovementPrompt({
+            sourceCode,
+            existingTests,
+            language,
+            framework,
+            gaps
+        });
+
+        // Determine API key and provider
+        let apiKeyToUse = null;
+        let providerToUse = llmProvider || config.llm.provider;
+        let useDashboard = false;
+        let user = null;
+
+        if (req.user) {
+            user = await User.findByPk(req.user.id);
+            if (user) {
+                if (!llmProvider) {
+                    providerToUse = user.preferred_llm || config.llm.provider;
+                }
+
+                if (providerToUse === 'gemini' && user.gemini_api_key) {
+                    apiKeyToUse = decryptKey(user.gemini_api_key);
+                } else if (providerToUse === 'deepseek' && user.deepseek_api_key) {
+                    apiKeyToUse = decryptKey(user.deepseek_api_key);
+                }
+
+                if (!apiKeyToUse && user.license_key && user.license_status === 'active') {
+                    useDashboard = true;
+                }
+            }
+        }
+
+        const startTime = Date.now();
+        let additionalTests = '';
+
+        if (useDashboard && user?.license_key) {
+            try {
+                additionalTests = await generateWithDashboardProxy(user.license_key, prompt);
+            } catch (proxyError) {
+                console.error('Dashboard proxy failed:', proxyError.message);
+                return res.status(503).json({
+                    error: `Dashboard proxy error: ${proxyError.message}`,
+                    suggestion: 'Thêm API key riêng trong Settings'
+                });
+            }
+        } else {
+            // Use testGenerator with custom prompt
+            const result = await testGenerator.generateTests({
+                code: sourceCode,
+                specs: `EXISTING TESTS (DO NOT DUPLICATE):\n${existingTests}\n\nFILL THESE GAPS:\n${gaps.join(', ')}`,
+                framework,
+                language,
+                provider: providerToUse,
+                userApiKey: apiKeyToUse,
+                customInstructions: 'Generate ONLY additional tests that are NOT already covered. Focus on edge cases and error handling.'
+            });
+            additionalTests = result.generatedTests;
+        }
+
+        const generationTime = Date.now() - startTime;
+
+        // Count generated tests
+        const { testCount: newTestCount } = parseExistingTests(additionalTests, language);
+
+        res.json({
+            success: true,
+            data: {
+                additionalTests,
+                newTestCount,
+                generationTime,
+                llmProvider: providerToUse,
+                framework,
+                language
+            }
+        });
+    } catch (error) {
+        console.error('Generate improvement error:', error);
+        next(error);
+    }
+});
+
+export default router;

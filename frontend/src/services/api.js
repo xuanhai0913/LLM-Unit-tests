@@ -83,4 +83,32 @@ export async function healthCheck() {
     return response.data;
 }
 
+/**
+ * Analyze existing tests to identify coverage gaps
+ */
+export async function analyzeTests({ sourceCode, existingTests, language, framework }) {
+    const response = await api.post('/improve/analyze', {
+        sourceCode,
+        existingTests,
+        language,
+        framework
+    });
+    return response.data;
+}
+
+/**
+ * Generate additional tests to fill coverage gaps
+ */
+export async function generateImprovements({ sourceCode, existingTests, language, framework, gaps, llmProvider }) {
+    const response = await api.post('/improve/generate', {
+        sourceCode,
+        existingTests,
+        language,
+        framework,
+        gaps,
+        llmProvider
+    });
+    return response.data;
+}
+
 export default api;
