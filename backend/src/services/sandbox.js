@@ -162,11 +162,20 @@ class SandboxService {
         });
     }
 
-    async _cleanup(dir) {
+    async _cleanup(runDir) {
         try {
-            await fs.rm(dir, { recursive: true, force: true });
-        } catch (e) {
-            console.error(`Failed to cleanup ${dir}:`, e);
+            // Because files in runDir are created by Docker (root), 
+            // the Node process (non-root) cannot delete them with fs.rm.
+            // We spawn a small alpine container to remove the directory.
+            const dirName = path.basename(runDir);
+            const parentDir = path.dirname(runDir);
+
+            // Mount parent dir and delete the specific child directory
+            const command = `docker run --rm -v "${parentDir}:/workspace" alpine rm -rf /workspace/${dirName}`;
+
+            await this._runCommand(command);
+        } catch (error) {
+            console.error(`Failed to cleanup ${runDir}:`, error.message);
         }
     }
 }
