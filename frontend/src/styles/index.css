@@ -1190,6 +1190,88 @@ body::before {
   color: var(--primary-yellow);
 }
 
+/* Stats Grid */
+.sandbox-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--text-muted);
+}
+
+.stat-card-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stat-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-card.passed .stat-card-value { color: var(--success); }
+.stat-card.failed .stat-card-value { color: var(--error); }
+.stat-card.time .stat-card-value { color: var(--primary-yellow); }
+.stat-card.coverage { grid-row: span 1; } /* Make sure it fits */
+
+/* Circular Chart */
+.coverage-chart-container {
+    width: 80px;
+    height: 80px;
+}
+
+.circular-chart {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: var(--border-subtle);
+    stroke-width: 3.8;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 3.8;
+    stroke-linecap: round;
+    stroke: var(--primary-orange); 
+    animation: progress 1s ease-out forwards;
+}
+
+.percentage {
+    fill: var(--text-primary);
+    font-family: var(--font-sans);
+    font-weight: bold;
+    font-size: 0.5em;
+    text-anchor: middle;
+}
+
+@keyframes progress {
+    0% { stroke-dasharray: 0 100; }
+}
+
 .terminal-frame {
   margin: 1.5rem;
   background: #0d0d12;

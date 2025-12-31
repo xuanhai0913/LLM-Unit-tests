@@ -418,6 +418,25 @@ function Home() {
                                                 <span className="stat-card-label">Failed</span>
                                                 <span className="stat-card-value">{testResults.details?.failed || 0}</span>
                                             </div>
+                                            <div className="stat-card coverage">
+                                                <span className="stat-card-label">Coverage</span>
+                                                <div className="coverage-chart-container">
+                                                    <svg viewBox="0 0 36 36" className="circular-chart">
+                                                        <path className="circle-bg"
+                                                            d="M18 2.0845
+                                                              a 15.9155 15.9155 0 0 1 0 31.831
+                                                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        />
+                                                        <path className="circle"
+                                                            strokeDasharray={`${testResults.details?.coverage || 0}, 100`}
+                                                            d="M18 2.0845
+                                                              a 15.9155 15.9155 0 0 1 0 31.831
+                                                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        />
+                                                        <text x="18" y="20.35" className="percentage">{testResults.details?.coverage || 0}%</text>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                             <div className="stat-card time">
                                                 <span className="stat-card-label">Duration</span>
                                                 <span className="stat-card-value">{testResults.details?.duration || '0s'}</span>

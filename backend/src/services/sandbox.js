@@ -33,13 +33,15 @@ class SandboxService {
                 const mergedCode = `${sourceCode}\n\n${testCode}`;
                 await fs.writeFile(path.join(runDir, 'test_run.py'), mergedCode);
 
-                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-python pytest test_run.py`;
+                // Run with pytest-cov and output json report
+                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-python pytest --cov=. --cov-report=json:coverage.json test_run.py`;
             } else if (language === 'javascript' || language === 'typescript') {
                 // Prepend source code to test code for JS as well
                 const mergedCode = `${sourceCode}\n\n${testCode}`;
                 await fs.writeFile(path.join(runDir, 'test_run.js'), mergedCode);
 
-                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest test_run.js`;
+                // Run with jest coverage
+                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --coverage --coverageReporters="json-summary" test_run.js`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
@@ -47,6 +49,23 @@ class SandboxService {
             // Execute
             const result = await this._runCommand(command);
             const details = this._parseOutput(language, result.stdout + result.stderr);
+
+            // Parse Coverage
+            try {
+                if (language === 'python') {
+                    const coveragePath = path.join(runDir, 'coverage.json');
+                    const coverageData = JSON.parse(await fs.readFile(coveragePath, 'utf8'));
+                    details.coverage = Math.round(coverageData.totals?.percent_covered || 0);
+                } else if (language === 'javascript' || language === 'typescript') {
+                    const coveragePath = path.join(runDir, 'coverage', 'coverage-summary.json');
+                    const coverageData = JSON.parse(await fs.readFile(coveragePath, 'utf8'));
+                    // Use line coverage as the main metric
+                    details.coverage = Math.round(coverageData.total?.lines?.pct || 0);
+                }
+            } catch (err) {
+                console.warn('Failed to parse coverage:', err.message);
+                details.coverage = 0;
+            }
 
             return {
                 success: true,
@@ -77,6 +96,7 @@ class SandboxService {
             passed: 0,
             failed: 0,
             errors: 0,
+            coverage: 0,
             duration: '',
             tests: []
         };

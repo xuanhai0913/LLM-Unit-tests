@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
 # Install testing frameworks
-RUN pip install unittest2 pytest
+RUN pip install unittest2 pytest pytest-cov
 
 WORKDIR /app
 
