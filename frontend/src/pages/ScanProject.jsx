@@ -158,12 +158,19 @@ function ScanProject() {
                     continue;
                 }
 
+                // Determine framework based on language
+                const fileLanguage = file.language || language;
+                let fileFramework = framework;
+                if (['javascript', 'typescript', 'jsx', 'tsx'].includes(fileLanguage)) {
+                    fileFramework = 'jest';
+                }
+
                 // Generate tests
                 const genResult = await generateTests({
                     code: content,
                     specs: '',
-                    framework,
-                    language: file.language || language,
+                    framework: fileFramework,
+                    language: fileLanguage,
                     llmProvider
                 });
 
