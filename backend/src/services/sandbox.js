@@ -45,7 +45,8 @@ class SandboxService {
                     testEnvironment: 'node',
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
-                    coverageReporters: ['json-summary', 'text']
+                    coverageReporters: ['json-summary', 'text'],
+                    testMatch: ['**/test_run.js']
                 }));
 
                 // Run with jest coverage
