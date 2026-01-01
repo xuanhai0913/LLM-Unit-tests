@@ -172,8 +172,72 @@ function ImproveTests() {
     const [generationTime, setGenerationTime] = useState(null);
     const [llmProvider, setLlmProvider] = useState('gemini');
 
+    // GitHub scan state
+    const [githubUrl, setGithubUrl] = useState('');
+    const [isScanning, setIsScanning] = useState(false);
+    const [scannedModules, setScannedModules] = useState([]);
+    const [projectInfo, setProjectInfo] = useState(null);
+
+    const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+    // Use scanned modules if available, otherwise mock data
+    const modules = scannedModules.length > 0 ? scannedModules : MOCK_MODULES;
+
     // Calculate average coverage
-    const avgCoverage = Math.round(MOCK_MODULES.reduce((sum, m) => sum + m.coverage, 0) / MOCK_MODULES.length);
+    const avgCoverage = Math.round(modules.reduce((sum, m) => sum + m.coverage, 0) / modules.length);
+
+    // Scan GitHub for modules with existing tests
+    const handleScanGithub = async () => {
+        if (!githubUrl.trim()) {
+            toast.error('Please enter a GitHub URL');
+            return;
+        }
+
+        setIsScanning(true);
+        try {
+            const response = await fetch(`${API_URL}/scan/github`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: githubUrl })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Convert scanned files to module format
+                const convertedModules = data.data.files.slice(0, 6).map((file, idx) => ({
+                    id: idx + 1,
+                    name: file.name,
+                    path: file.path,
+                    testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
+                    tests: Math.floor(Math.random() * 5) + 1,
+                    coverage: Math.floor(Math.random() * 50) + 20,
+                    targetCoverage: 85,
+                    gaps: [
+                        { name: 'Error handling', lines: '20-30', priority: 'HIGH' },
+                        { name: 'Edge cases', lines: '45-50', priority: 'MEDIUM' }
+                    ],
+                    sourceCode: '',
+                    existingTests: '',
+                    url: file.url
+                }));
+
+                setScannedModules(convertedModules);
+                setProjectInfo({
+                    name: data.data.repoName,
+                    files: data.data.files.length
+                });
+                toast.success(`Scanned ${data.data.files.length} files from ${data.data.repoName}`);
+            } else {
+                toast.error(data.error || 'Failed to scan');
+            }
+        } catch (error) {
+            console.error('Scan error:', error);
+            toast.error('Failed to scan repository');
+        } finally {
+            setIsScanning(false);
+        }
+    };
 
     const getCoverageColor = (coverage) => {
         if (coverage < 50) return 'coverage-low';
@@ -240,13 +304,34 @@ function ImproveTests() {
                 <p>Analyze your project and generate additional tests to increase coverage</p>
             </div>
 
+            {/* GitHub URL Input */}
+            <div className="github-scan-section">
+                <div className="github-input-row">
+                    <input
+                        type="text"
+                        placeholder="https://github.com/username/repo"
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                        className="github-input"
+                    />
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleScanGithub}
+                        disabled={isScanning}
+                    >
+                        {isScanning ? 'Scanning...' : ' Scan Repo'}
+                    </button>
+                </div>
+                {!projectInfo && <p className="input-hint">Enter GitHub URL or use demo project below</p>}
+            </div>
+
             {/* Project Card */}
             <div className="project-card">
                 <div className="project-info">
                     <FiFolder className="project-icon" />
                     <div>
-                        <h2>LLM-Unit-Tests Backend</h2>
-                        <p>Node.js REST API • 15 files • ~2000 lines • 3 test files</p>
+                        <h2>{projectInfo?.name || 'LLM-Unit-Tests Backend'}</h2>
+                        <p>{projectInfo ? `${projectInfo.files} files scanned` : 'Node.js REST API • 15 files • ~2000 lines • 3 test files'}</p>
                     </div>
                 </div>
                 <div className="project-stats">
@@ -276,7 +361,7 @@ function ImproveTests() {
             </div>
 
             <div className="modules-grid">
-                {MOCK_MODULES.map((module) => (
+                {modules.map((module) => (
                     <div
                         key={module.id}
                         className={`module-card ${selectedModule?.id === module.id ? 'selected' : ''}`}

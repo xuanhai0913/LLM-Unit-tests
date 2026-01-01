@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import { FiFolder, FiGithub, FiFile, FiZap, FiArrowLeft, FiCheck, FiLoader, FiCpu } from 'react-icons/fi';
+import { FiFolder, FiGithub, FiFile, FiZap, FiArrowLeft, FiCheck, FiLoader, FiPlay, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { generateTests } from '../services/api';
+import { generateTests, runTests } from '../services/api';
 import '../styles/scanProject.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -205,7 +205,7 @@ function ScanProject() {
                 <button onClick={() => window.location.href = '/'} className="back-link">
                     <FiArrowLeft /> Back to Home
                 </button>
-                <h1>📁 Scan Project</h1>
+                <h1> Scan Project</h1>
                 <p>Upload a folder or paste GitHub URL to auto-generate tests for entire project</p>
             </div>
 
@@ -273,7 +273,7 @@ function ScanProject() {
                 <div className="files-section">
                     <div className="files-header">
                         <div>
-                            <h2>📊 {projectName || 'Scanned Project'}</h2>
+                            <h2> {projectName || 'Scanned Project'}</h2>
                             <p>{scannedFiles.length} files • {totalLines} lines</p>
                         </div>
                         <div className="config-selects">
@@ -352,7 +352,7 @@ function ScanProject() {
                     <h2>✅ Generated Tests</h2>
                     <div className="results-grid">
                         {generatedResults.map((result, idx) => (
-                            <div key={idx} className={`result-card ${result.success ? 'success' : 'error'}`}>
+                            <div key={idx} className={`result-card ${result.success ? 'success' : 'error'} ${result.testResult ? (result.testResult.passed ? 'test-passed' : 'test-failed') : ''}`}>
                                 <div className="result-header">
                                     {result.success ? <FiCheck /> : '❌'}
                                     <span>{result.file}</span>
@@ -362,10 +362,91 @@ function ScanProject() {
                                         </span>
                                     )}
                                 </div>
+
+                                {/* Test Results Display */}
+                                {result.testResult && (
+                                    <div className={`test-result-banner ${result.testResult.passed ? 'passed' : 'failed'}`}>
+                                        {result.testResult.passed ? (
+                                            <>✅ Tests PASSED - {result.testResult.passedCount}/{result.testResult.totalTests} passed</>
+                                        ) : (
+                                            <>❌ Tests FAILED - {result.testResult.passedCount}/{result.testResult.totalTests} passed</>
+                                        )}
+                                    </div>
+                                )}
+
                                 {result.success ? (
                                     <div className="result-preview">
                                         <pre>{result.tests}</pre>
                                         <div className="result-actions">
+                                            <button
+                                                className="btn btn-primary"
+                                                disabled={result.isRunning}
+                                                onClick={async () => {
+                                                    // Find the file content for this result
+                                                    const file = scannedFiles.find(f => f.name === result.file);
+                                                    let sourceCode = file?.content || '';
+
+                                                    // If no content, try to fetch from GitHub
+                                                    if (!sourceCode && file?.url) {
+                                                        try {
+                                                            const res = await fetch(`${API_URL}/scan/github/content`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ url: file.url })
+                                                            });
+                                                            const data = await res.json();
+                                                            sourceCode = data.success ? data.data.content : '';
+                                                        } catch (e) {
+                                                            console.error('Failed to fetch source:', e);
+                                                        }
+                                                    }
+
+                                                    // Update result to show running
+                                                    setGeneratedResults(prev => prev.map((r, i) =>
+                                                        i === idx ? { ...r, isRunning: true } : r
+                                                    ));
+
+                                                    try {
+                                                        const testResult = await runTests({
+                                                            code: sourceCode,
+                                                            tests: result.tests,
+                                                            language: language
+                                                        });
+
+                                                        // Update with results
+                                                        setGeneratedResults(prev => prev.map((r, i) =>
+                                                            i === idx ? {
+                                                                ...r,
+                                                                isRunning: false,
+                                                                testResult: {
+                                                                    passed: testResult.data?.passed || testResult.passed,
+                                                                    passedCount: testResult.data?.passedTests || 0,
+                                                                    totalTests: testResult.data?.totalTests || 0,
+                                                                    output: testResult.data?.output || testResult.output
+                                                                }
+                                                            } : r
+                                                        ));
+
+                                                        if (testResult.data?.passed || testResult.passed) {
+                                                            toast.success('Tests passed! ✅');
+                                                        } else {
+                                                            toast.error('Some tests failed ❌');
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Run tests error:', error);
+                                                        setGeneratedResults(prev => prev.map((r, i) =>
+                                                            i === idx ? { ...r, isRunning: false, testResult: { passed: false, error: error.message } } : r
+                                                        ));
+                                                        toast.error('Failed to run tests');
+                                                    }
+                                                }}
+                                            >
+                                                {result.isRunning ? (
+                                                    <><FiLoader className="spinning" /> Running...</>
+                                                ) : (
+                                                    <><FiPlay /> Run Tests</>
+                                                )}
+                                            </button>
                                             <button
                                                 className="btn btn-secondary"
                                                 onClick={() => {
@@ -373,7 +454,7 @@ function ScanProject() {
                                                     toast.success('Copied full code!');
                                                 }}
                                             >
-                                                📋 Copy All ({result.tests?.split('\n').length} lines)
+                                                 Copy All
                                             </button>
                                         </div>
                                     </div>
