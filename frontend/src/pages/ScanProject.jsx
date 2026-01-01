@@ -167,11 +167,14 @@ function ScanProject() {
                     llmProvider
                 });
 
+                // API returns { success: true, data: { generatedTests: "..." } }
+                const testsCode = genResult.data?.generatedTests || genResult.generatedTests || genResult.tests || '';
+
                 results.push({
                     file: file.name,
                     path: file.path,
-                    tests: genResult.tests || genResult.generatedTests,
-                    success: true
+                    tests: testsCode,
+                    success: !!testsCode
                 });
 
             } catch (error) {
