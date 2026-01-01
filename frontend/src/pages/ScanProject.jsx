@@ -366,10 +366,12 @@ function ScanProject() {
                                 {/* Test Results Display */}
                                 {result.testResult && (
                                     <div className={`test-result-banner ${result.testResult.passed ? 'passed' : 'failed'}`}>
-                                        {result.testResult.passed ? (
-                                            <>✅ Tests PASSED - {result.testResult.passedCount}/{result.testResult.totalTests} passed</>
+                                        {result.testResult.error ? (
+                                            <>❌ Error: {result.testResult.error}</>
+                                        ) : result.testResult.passed ? (
+                                            <>✅ Tests PASSED</>
                                         ) : (
-                                            <>❌ Tests FAILED - {result.testResult.passedCount}/{result.testResult.totalTests} passed</>
+                                            <>❌ Tests FAILED - Check console for details</>
                                         )}
                                     </div>
                                 )}
@@ -454,7 +456,7 @@ function ScanProject() {
                                                     toast.success('Copied full code!');
                                                 }}
                                             >
-                                                 Copy All
+                                                Copy All
                                             </button>
                                         </div>
                                     </div>

@@ -205,7 +205,7 @@ function ImproveTests() {
 
             if (data.success) {
                 // Convert scanned files to module format
-                const convertedModules = data.data.files.slice(0, 6).map((file, idx) => ({
+                const convertedModules = data.data.files.map((file, idx) => ({
                     id: idx + 1,
                     name: file.name,
                     path: file.path,
