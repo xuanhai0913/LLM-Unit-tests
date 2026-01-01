@@ -23,6 +23,12 @@ function decryptKey(encryptedKey) {
  * Build improvement prompt for LLM
  */
 function buildImprovementPrompt({ sourceCode, existingTests, language, framework, gaps }) {
+    const isJest = framework === 'jest';
+    const jestInstructions = isJest ? `
+- IMPORTANT: The code under test is stored in "./index.js". Import functions using require('./index').
+- IMPORTANT: Mock external libraries using jest.mock(..., ..., { virtual: true }).
+- TIP: Suppress console.error with jest.spyOn(console, 'error').mockImplementation(() => {}).` : '';
+
     return `You are an expert test engineer improving an existing test suite.
 
 ## SOURCE CODE TO TEST:
@@ -32,7 +38,7 @@ ${sourceCode}
 
 ## EXISTING TESTS (Already written - DO NOT duplicate):
 \`\`\`${language}
-${existingTests}
+${existingTests || '// No existing tests provided'}
 \`\`\`
 
 ## COVERAGE GAPS TO FILL:
@@ -45,7 +51,7 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 1. DO NOT duplicate any existing tests
 2. Focus ONLY on the missing areas listed above
 3. Follow the EXACT same style and patterns as the existing tests
-4. Use the same test framework (${framework})
+4. Use the same test framework (${framework})${jestInstructions}
 5. Include descriptive test names that explain what they test
 6. Include edge cases and error scenarios
 7. Add comments explaining what each new test covers
@@ -190,9 +196,9 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
             llmProvider
         } = req.body;
 
-        if (!sourceCode || !existingTests) {
+        if (!sourceCode) {
             return res.status(400).json({
-                error: 'Both sourceCode and existingTests are required'
+                error: 'Source code is required'
             });
         }
 
