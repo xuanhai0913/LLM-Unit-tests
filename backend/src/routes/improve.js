@@ -249,7 +249,9 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
 
         if (useDashboard && effectiveLicenseKey) {
             try {
-                additionalTests = await generateWithDashboardProxy(effectiveLicenseKey, prompt);
+                const rawResponse = await generateWithDashboardProxy(effectiveLicenseKey, prompt);
+                const codeBlocks = extractCodeBlocks(rawResponse, language);
+                additionalTests = codeBlocks.length > 0 ? codeBlocks[0] : rawResponse;
             } catch (proxyError) {
                 console.error('Dashboard proxy failed:', proxyError.message);
                 return res.status(503).json({
