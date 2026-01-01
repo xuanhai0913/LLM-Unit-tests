@@ -40,8 +40,16 @@ class SandboxService {
                 const mergedCode = `${sourceCode}\n\n${testCode}`;
                 await fs.writeFile(path.join(runDir, 'test_run.js'), mergedCode);
 
+                // Create jest config
+                await fs.writeFile(path.join(runDir, 'jest.config.json'), JSON.stringify({
+                    testEnvironment: 'node',
+                    collectCoverage: true,
+                    coverageDirectory: 'coverage',
+                    coverageReporters: ['json-summary', 'text']
+                }));
+
                 // Run with jest coverage
-                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --coverage --coverageReporters="json-summary" test_run.js`;
+                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --config jest.config.json test_run.js`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
