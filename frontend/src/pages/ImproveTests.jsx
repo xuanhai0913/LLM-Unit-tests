@@ -444,14 +444,14 @@ function ImproveTests() {
                                         handleAnalyzeModule(module);
                                     }}
                                 >
-                                    🔍 Analyze
+                                    Analyze
                                 </button>
                             )}
                             {module.isAnalyzing && (
-                                <span className="analyzing-badge">⏳ Analyzing...</span>
+                                <span className="analyzing-badge">Analyzing...</span>
                             )}
                             {module.analyzed && (
-                                <span className="analyzed-badge">✅ Analyzed</span>
+                                <span className="analyzed-badge">Done</span>
                             )}
                         </div>
 

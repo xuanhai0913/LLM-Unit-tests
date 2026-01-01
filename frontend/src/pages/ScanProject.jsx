@@ -349,12 +349,12 @@ function ScanProject() {
             {/* Results */}
             {generatedResults.length > 0 && (
                 <div className="results-section">
-                    <h2>✅ Generated Tests</h2>
+                    <h2>Generated Tests</h2>
                     <div className="results-grid">
                         {generatedResults.map((result, idx) => (
                             <div key={idx} className={`result-card ${result.success ? 'success' : 'error'} ${result.testResult ? (result.testResult.passed ? 'test-passed' : 'test-failed') : ''}`}>
                                 <div className="result-header">
-                                    {result.success ? <FiCheck /> : '❌'}
+                                    {result.success ? <FiCheck /> : <FiAlertCircle />}
                                     <span>{result.file}</span>
                                     {result.success && result.tests && (
                                         <span className="line-count">
@@ -378,7 +378,7 @@ function ScanProject() {
                                         {/* Show test output log */}
                                         {result.testResult.output && (
                                             <div className="test-output-log">
-                                                <div className="test-output-header">📋 Test Output:</div>
+                                                <div className="test-output-header">Test Output:</div>
                                                 <pre className="test-output-content">{result.testResult.output}</pre>
                                             </div>
                                         )}
@@ -439,9 +439,9 @@ function ScanProject() {
                                                         ));
 
                                                         if (testResult.data?.passed || testResult.passed) {
-                                                            toast.success('Tests passed! ✅');
+                                                            toast.success('Tests passed!');
                                                         } else {
-                                                            toast.error('Some tests failed ❌');
+                                                            toast.error('Some tests failed');
                                                         }
                                                     } catch (error) {
                                                         console.error('Run tests error:', error);
