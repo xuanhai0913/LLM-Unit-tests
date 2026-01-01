@@ -10,6 +10,7 @@ import settingsRoutes from './routes/settings.js';
 import keysRoutes from './routes/keys.js';
 import testRoutes from './routes/test.js';
 import improveRoutes from './routes/improve.js';
+import scanRoutes from './routes/scan.js';
 import { initDatabase } from './models/index.js';
 
 const app = express();
@@ -60,6 +61,7 @@ app.use('/api/generate', generateRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/improve', improveRoutes);
+app.use('/api/scan', scanRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
