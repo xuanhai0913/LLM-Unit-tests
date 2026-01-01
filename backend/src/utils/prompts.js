@@ -91,7 +91,8 @@ Use self.assertEqual, self.assertTrue, etc. for assertions.`,
 Use expect() for assertions. Mock dependencies with jest.mock() if needed.
 IMPORTANT: The code under test is stored in a file named "./index.js". You MUST import the functions/classes to test from "./index", e.g., "const myModule = require('./index');" or "import myModule from './index';".
 IMPORTANT: External libraries (like ioredis, axios, etc.) are NOT installed. You MUST mock them using explicit factory AND { virtual: true }.
-Example: jest.mock('ioredis', () => jest.fn().mockImplementation(() => ({ get: jest.fn(), set: jest.fn() })), { virtual: true });`,
+Example: jest.mock('ioredis', () => jest.fn().mockImplementation(() => ({ get: jest.fn(), set: jest.fn() })), { virtual: true });
+TIP: To suppress expected error logs, use: jest.spyOn(console, 'error').mockImplementation(() => {});`,
 
         mocha: `Use Mocha with Chai for assertions. Use describe() and it() for structure.
 Use expect() or should syntax for assertions.`,
