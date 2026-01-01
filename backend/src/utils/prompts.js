@@ -88,7 +88,8 @@ Import pytest at the top. Use @pytest.fixture for reusable test data.`,
 Use self.assertEqual, self.assertTrue, etc. for assertions.`,
 
         jest: `Use Jest testing framework. Use describe() and it() for test organization.
-Use expect() for assertions. Mock dependencies with jest.mock() if needed.`,
+Use expect() for assertions. Mock dependencies with jest.mock() if needed.
+IMPORTANT: The code under test is stored in a file named "./index.js". You MUST import the functions/classes to test from "./index", e.g., "const myModule = require('./index');" or "import myModule from './index';".`,
 
         mocha: `Use Mocha with Chai for assertions. Use describe() and it() for structure.
 Use expect() or should syntax for assertions.`,

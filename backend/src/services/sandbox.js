@@ -36,9 +36,23 @@ class SandboxService {
                 // Run with pytest-cov and output json report
                 command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-python pytest --cov=. --cov-report=json:coverage.json test_run.py`;
             } else if (language === 'javascript' || language === 'typescript') {
-                // Prepend source code to test code for JS as well
-                const mergedCode = `${sourceCode}\n\n${testCode}`;
-                await fs.writeFile(path.join(runDir, 'test_run.js'), mergedCode);
+                const ext = language === 'typescript' ? 'ts' : 'js';
+                const sourceFile = `index.${ext}`;
+                const testFile = `test_run.${ext}`;
+
+                // Always write source file
+                await fs.writeFile(path.join(runDir, sourceFile), sourceCode);
+
+                let finalTestCode = testCode;
+                // Check if test code imports source (simple check)
+                const hasImport = testCode.includes('./index');
+
+                if (!hasImport) {
+                    // Fallback to merge logic if no import is detected
+                    finalTestCode = `${sourceCode}\n\n${testCode}`;
+                }
+
+                await fs.writeFile(path.join(runDir, testFile), finalTestCode);
 
                 // Create jest config
                 await fs.writeFile(path.join(runDir, 'jest.config.json'), JSON.stringify({
@@ -46,11 +60,11 @@ class SandboxService {
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
                     coverageReporters: ['json-summary', 'text'],
-                    testMatch: ['**/test_run.js']
+                    testMatch: [`**/${testFile}`]
                 }));
 
                 // Run with jest coverage
-                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --config jest.config.json test_run.js`;
+                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --config jest.config.json ${testFile}`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
