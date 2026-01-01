@@ -609,8 +609,8 @@ function ImproveTests() {
                     </div>
 
                     <div className="results-actions">
-                        <button className="btn btn-primary">
-                            <FiPlay /> Run All Tests
+                        <button className="btn btn-primary" onClick={handleRunTests}>
+                            <FiPlay /> Run Generated Tests
                         </button>
                         <button className="btn btn-secondary" onClick={handleCopy}>
                             📋 Copy to Clipboard
