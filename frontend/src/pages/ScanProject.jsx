@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { FiFolder, FiGithub, FiFile, FiZap, FiArrowLeft, FiCheck, FiLoader, FiPlay, FiX } from 'react-icons/fi';
+import { FiFolder, FiGithub, FiFile, FiZap, FiArrowLeft, FiCheck, FiLoader, FiPlay, FiX, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { generateTests, runTests } from '../services/api';
 import '../styles/scanProject.css';
