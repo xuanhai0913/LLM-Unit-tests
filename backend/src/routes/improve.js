@@ -236,12 +236,20 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
             }
         }
 
+        // Fallback: Use default license key if no user logged in and no API key
+        let effectiveLicenseKey = user?.license_key;
+        if (!apiKeyToUse && !effectiveLicenseKey && config.defaultLicenseKey) {
+            effectiveLicenseKey = config.defaultLicenseKey;
+            useDashboard = true;
+            console.log('Using DEFAULT_LICENSE_KEY for public access (improve)');
+        }
+
         const startTime = Date.now();
         let additionalTests = '';
 
-        if (useDashboard && user?.license_key) {
+        if (useDashboard && effectiveLicenseKey) {
             try {
-                additionalTests = await generateWithDashboardProxy(user.license_key, prompt);
+                additionalTests = await generateWithDashboardProxy(effectiveLicenseKey, prompt);
             } catch (proxyError) {
                 console.error('Dashboard proxy failed:', proxyError.message);
                 return res.status(503).json({
