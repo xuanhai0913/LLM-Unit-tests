@@ -277,6 +277,36 @@
     border: 1px solid rgba(255, 68, 68, 0.3);
 }
 
+.test-result-section {
+    margin-bottom: 0.75rem;
+}
+
+.test-output-log {
+    margin-top: 0.5rem;
+    background: #0d0d14;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.test-output-header {
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.test-output-content {
+    padding: 0.75rem;
+    margin: 0;
+    font-size: 0.75rem;
+    color: #e2e8f0;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', monospace;
+}
+
 .result-header {
     display: flex;
     align-items: center;

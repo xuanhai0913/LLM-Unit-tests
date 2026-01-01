@@ -204,81 +204,29 @@ function ImproveTests() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success(`Found ${data.data.files.length} files. Analyzing...`);
+                // Just list files without analyzing - user will select which to analyze
+                const scannedFiles = data.data.files.map((file, idx) => ({
+                    id: idx + 1,
+                    name: file.name,
+                    path: file.path,
+                    testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
+                    tests: '?',
+                    coverage: null, // Will be set after analysis
+                    targetCoverage: 85,
+                    gaps: [],
+                    sourceCode: '',
+                    existingTests: '',
+                    url: file.url,
+                    analyzed: false,
+                    isAnalyzing: false
+                }));
 
-                // Analyze each file with LLM (limit to first 10 for performance)
-                const filesToAnalyze = data.data.files.slice(0, 10);
-                const analyzedModules = [];
-
-                for (let i = 0; i < filesToAnalyze.length; i++) {
-                    const file = filesToAnalyze[i];
-
-                    try {
-                        // Fetch file content
-                        const contentRes = await fetch(`${API_URL}/scan/github/content`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ url: file.url })
-                        });
-                        const contentData = await contentRes.json();
-                        const sourceCode = contentData.success ? contentData.data.content : '';
-
-                        // Analyze with LLM
-                        let analysis = { gaps: [], estimatedCoverage: 30, totalFunctions: 0 };
-                        if (sourceCode) {
-                            const analyzeRes = await fetch(`${API_URL}/analyze/file`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    sourceCode,
-                                    fileName: file.name,
-                                    language: file.language || 'javascript'
-                                })
-                            });
-                            const analyzeData = await analyzeRes.json();
-                            if (analyzeData.success) {
-                                analysis = analyzeData.data;
-                            }
-                        }
-
-                        analyzedModules.push({
-                            id: i + 1,
-                            name: file.name,
-                            path: file.path,
-                            testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
-                            tests: analysis.testedFunctions || 0,
-                            coverage: analysis.estimatedCoverage || 30,
-                            targetCoverage: 85,
-                            gaps: analysis.gaps.length > 0 ? analysis.gaps : [
-                                { name: 'Needs analysis', lines: '1-10', priority: 'MEDIUM', reason: 'Unable to analyze' }
-                            ],
-                            sourceCode: sourceCode,
-                            existingTests: '',
-                            url: file.url,
-                            totalFunctions: analysis.totalFunctions || 0
-                        });
-                    } catch (e) {
-                        console.error(`Failed to analyze ${file.name}:`, e);
-                        analyzedModules.push({
-                            id: i + 1,
-                            name: file.name,
-                            path: file.path,
-                            tests: 0,
-                            coverage: 25,
-                            targetCoverage: 85,
-                            gaps: [{ name: 'Analysis failed', lines: '?', priority: 'LOW', reason: e.message }],
-                            sourceCode: '',
-                            url: file.url
-                        });
-                    }
-                }
-
-                setScannedModules(analyzedModules);
+                setScannedModules(scannedFiles);
                 setProjectInfo({
                     name: data.data.repoName,
                     files: data.data.files.length
                 });
-                toast.success(`Analyzed ${analyzedModules.length} files with LLM`);
+                toast.success(`Found ${data.data.files.length} files. Select a file to analyze.`);
             } else {
                 toast.error(data.error || 'Failed to scan');
             }
@@ -287,6 +235,69 @@ function ImproveTests() {
             toast.error('Failed to scan repository');
         } finally {
             setIsScanning(false);
+        }
+    };
+
+    // Analyze a single module with LLM
+    const handleAnalyzeModule = async (module) => {
+        // Set analyzing state for this module
+        setScannedModules(prev => prev.map(m =>
+            m.id === module.id ? { ...m, isAnalyzing: true } : m
+        ));
+
+        try {
+            // Fetch file content
+            const contentRes = await fetch(`${API_URL}/scan/github/content`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: module.url })
+            });
+            const contentData = await contentRes.json();
+            const sourceCode = contentData.success ? contentData.data.content : '';
+
+            // Analyze with LLM
+            let analysis = { gaps: [], estimatedCoverage: 30, totalFunctions: 0, testedFunctions: 0 };
+            if (sourceCode) {
+                toast.loading(`🤖 AI analyzing ${module.name}...`, { id: 'analyzing' });
+                const analyzeRes = await fetch(`${API_URL}/analyze/file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sourceCode,
+                        fileName: module.name,
+                        language: module.name.endsWith('.py') ? 'python' : 'javascript'
+                    })
+                });
+                const analyzeData = await analyzeRes.json();
+                toast.dismiss('analyzing');
+                if (analyzeData.success) {
+                    analysis = analyzeData.data;
+                    toast.success(`Analyzed ${module.name}!`);
+                }
+            }
+
+            // Update module with analysis results
+            setScannedModules(prev => prev.map(m =>
+                m.id === module.id ? {
+                    ...m,
+                    isAnalyzing: false,
+                    analyzed: true,
+                    sourceCode: sourceCode,
+                    tests: analysis.testedFunctions || 0,
+                    coverage: analysis.estimatedCoverage || 30,
+                    gaps: analysis.gaps.length > 0 ? analysis.gaps : [
+                        { name: 'No issues detected', lines: '-', priority: 'LOW', reason: 'Code looks good' }
+                    ],
+                    totalFunctions: analysis.totalFunctions || 0
+                } : m
+            ));
+        } catch (error) {
+            console.error('Analysis error:', error);
+            toast.dismiss('analyzing');
+            toast.error(`Failed to analyze ${module.name}`);
+            setScannedModules(prev => prev.map(m =>
+                m.id === module.id ? { ...m, isAnalyzing: false } : m
+            ));
         }
     };
 
@@ -424,35 +435,55 @@ function ImproveTests() {
                                 <h3>{module.name}</h3>
                                 <span className="module-path">{module.path}</span>
                             </div>
+                            {/* Analyze button for unanalyzed files */}
+                            {!module.analyzed && !module.isAnalyzing && (
+                                <button
+                                    className="btn btn-small btn-primary analyze-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAnalyzeModule(module);
+                                    }}
+                                >
+                                    🔍 Analyze
+                                </button>
+                            )}
+                            {module.isAnalyzing && (
+                                <span className="analyzing-badge">⏳ Analyzing...</span>
+                            )}
+                            {module.analyzed && (
+                                <span className="analyzed-badge">✅ Analyzed</span>
+                            )}
                         </div>
 
                         <div className="module-stats">
                             <div className="stat">
-                                <span className="stat-value">{module.tests}</span>
+                                <span className="stat-value">{module.analyzed ? module.tests : '?'}</span>
                                 <span className="stat-label">Tests</span>
                             </div>
                             <div className="stat">
-                                <span className={`stat-value ${getCoverageColor(module.coverage)}`}>
-                                    {module.coverage}%
+                                <span className={`stat-value ${module.coverage ? getCoverageColor(module.coverage) : ''}`}>
+                                    {module.coverage !== null ? `${module.coverage}%` : '?'}
                                 </span>
                                 <span className="stat-label">Coverage</span>
                             </div>
                             <div className="stat">
-                                <span className="stat-value">{module.gaps.length}</span>
+                                <span className="stat-value">{module.analyzed ? module.gaps.length : '?'}</span>
                                 <span className="stat-label">Gaps</span>
                             </div>
                         </div>
 
-                        <div className="coverage-bar">
-                            <div
-                                className={`coverage-fill ${getCoverageColor(module.coverage)}`}
-                                style={{ width: `${module.coverage}%` }}
-                            />
-                            <div
-                                className="coverage-target"
-                                style={{ left: `${module.targetCoverage}%` }}
-                            />
-                        </div>
+                        {module.coverage !== null && (
+                            <div className="coverage-bar">
+                                <div
+                                    className={`coverage-fill ${getCoverageColor(module.coverage)}`}
+                                    style={{ width: `${module.coverage}%` }}
+                                />
+                                <div
+                                    className="coverage-target"
+                                    style={{ left: `${module.targetCoverage}%` }}
+                                />
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

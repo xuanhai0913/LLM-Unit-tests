@@ -365,13 +365,22 @@ function ScanProject() {
 
                                 {/* Test Results Display */}
                                 {result.testResult && (
-                                    <div className={`test-result-banner ${result.testResult.passed ? 'passed' : 'failed'}`}>
-                                        {result.testResult.error ? (
-                                            <>❌ Error: {result.testResult.error}</>
-                                        ) : result.testResult.passed ? (
-                                            <>✅ Tests PASSED</>
-                                        ) : (
-                                            <>❌ Tests FAILED - Check console for details</>
+                                    <div className={`test-result-section ${result.testResult.passed ? 'passed' : 'failed'}`}>
+                                        <div className={`test-result-banner ${result.testResult.passed ? 'passed' : 'failed'}`}>
+                                            {result.testResult.error ? (
+                                                <>Error: {result.testResult.error}</>
+                                            ) : result.testResult.passed ? (
+                                                <>Tests PASSED</>
+                                            ) : (
+                                                <>Tests FAILED</>
+                                            )}
+                                        </div>
+                                        {/* Show test output log */}
+                                        {result.testResult.output && (
+                                            <div className="test-output-log">
+                                                <div className="test-output-header">📋 Test Output:</div>
+                                                <pre className="test-output-content">{result.testResult.output}</pre>
+                                            </div>
                                         )}
                                     </div>
                                 )}

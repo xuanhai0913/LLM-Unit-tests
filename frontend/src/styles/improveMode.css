@@ -75,6 +75,43 @@
     text-align: center;
 }
 
+/* Analyze button and badges */
+.analyze-btn {
+    margin-left: auto;
+    font-size: 0.75rem !important;
+    padding: 0.3rem 0.6rem !important;
+}
+
+.btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+}
+
+.analyzing-badge {
+    margin-left: auto;
+    color: var(--primary-orange);
+    font-size: 0.75rem;
+    animation: pulse 1.5s infinite;
+}
+
+.analyzed-badge {
+    margin-left: auto;
+    color: #22c55e;
+    font-size: 0.75rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
 /* Project Card */
 .project-card {
     background: linear-gradient(135deg, var(--surface) 0%, rgba(255, 107, 0, 0.05) 100%);
