@@ -196,7 +196,7 @@ function ScanProject() {
         toast.success(`Generated tests for ${successCount}/${filesToProcess.length} files`);
     };
 
-    const totalLines = scannedFiles.reduce((sum, f) => sum + (f.lines || 0), 0);
+    const totalLines = scannedFiles.reduce((sum, f) => sum + (f.lines || f.estimatedLines || 0), 0);
 
     return (
         <div className="scan-page">
@@ -321,7 +321,7 @@ function ScanProject() {
                                     <span className="file-name">{file.name}</span>
                                 </label>
                                 <span className="file-path">{file.path}</span>
-                                <span className="file-lines">{file.lines || '?'} lines</span>
+                                <span className="file-lines">{file.lines || file.estimatedLines || '?'} lines</span>
                             </div>
                         ))}
                     </div>

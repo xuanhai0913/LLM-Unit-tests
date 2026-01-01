@@ -135,6 +135,9 @@ router.post('/github', optionalAuth, async (req, res) => {
                 path: item.path,
                 sha: item.sha,
                 url: item.url,
+                size: item.size,
+                // Estimate lines (avg 30 chars per line)
+                estimatedLines: item.size ? Math.ceil(item.size / 30) : 0,
                 language: getLanguage(ext)
             });
         }
@@ -144,8 +147,8 @@ router.post('/github', optionalAuth, async (req, res) => {
             data: {
                 repoName: `${owner}/${repoName}`,
                 branch,
-                files: scannedFiles.slice(0, 20), // Limit to 20 files for demo
-                totalFiles: Math.min(scannedFiles.length, 20)
+                files: scannedFiles,
+                totalFiles: scannedFiles.length
             }
         });
 
