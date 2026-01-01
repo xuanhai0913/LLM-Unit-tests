@@ -78,7 +78,8 @@ function AppContent() {
                     <Route path="/auth/callback" element={<AuthCallback />} />
 
                     {/* Main app - accessible without login but with limited features */}
-                    <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
+                    <Route path="/" element={<Navigate to="/scan" replace />} />
+                    <Route path="/home" element={isAuthenticated ? <Home /> : <Landing />} />
                     <Route path="/improve" element={<ImproveTests />} />
                     <Route path="/scan" element={<ScanProject />} />
                     <Route path="/history" element={<History />} />

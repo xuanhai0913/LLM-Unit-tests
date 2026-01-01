@@ -23,6 +23,20 @@ function Header() {
                 </Link>
 
                 <nav className="nav">
+                    {/* Main features - visible to everyone */}
+                    <Link
+                        to="/scan"
+                        className={`nav-btn ${currentPage === '/scan' ? 'active' : ''}`}
+                    >
+                         Scan Project
+                    </Link>
+                    <Link
+                        to="/improve"
+                        className={`nav-btn ${currentPage === '/improve' ? 'active' : ''}`}
+                    >
+                         Improve Tests
+                    </Link>
+
                     {isAuthenticated && (
                         <>
                             <Link

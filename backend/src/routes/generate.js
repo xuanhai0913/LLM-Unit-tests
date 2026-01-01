@@ -81,7 +81,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
                 // If no personal API key but has active license, use Dashboard proxy
                 if (!apiKeyToUse && user.license_key && user.license_status === 'active') {
                     useDashboard = true;
-                    console.log('📡 Using Dashboard proxy with license key');
+                    console.log('Using Dashboard proxy with license key');
                 }
             }
         }
@@ -89,8 +89,16 @@ router.post('/', optionalAuth, async (req, res, next) => {
         let result;
         const startTime = Date.now();
 
+        // Fallback: Use default license key if no user logged in and no API key
+        let effectiveLicenseKey = user?.license_key;
+        if (!apiKeyToUse && !effectiveLicenseKey && config.defaultLicenseKey) {
+            effectiveLicenseKey = config.defaultLicenseKey;
+            useDashboard = true;
+            console.log('Using DEFAULT_LICENSE_KEY for public access');
+        }
+
         // Use Dashboard proxy if license is active and no personal API key
-        if (useDashboard && user?.license_key) {
+        if (useDashboard && effectiveLicenseKey) {
             try {
                 const prompt = buildTestGenerationPrompt({
                     code,
@@ -100,7 +108,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
                     referenceCode,
                     customInstructions
                 });
-                const rawResponse = await generateWithDashboardProxy(user.license_key, prompt);
+                const rawResponse = await generateWithDashboardProxy(effectiveLicenseKey, prompt);
 
                 const generationTime = Date.now() - startTime;
 

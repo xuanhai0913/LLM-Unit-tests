@@ -60,6 +60,9 @@ const config = {
     encryption: {
         key: process.env.ENCRYPTION_KEY,
     },
+
+    // Default License Key for public testing
+    defaultLicenseKey: process.env.DEFAULT_LICENSE_KEY || null,
 };
 
 // Validate required config
