@@ -1,6 +1,6 @@
 import express from 'express';
 import sandboxService from '../services/sandbox.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const router = express.Router();
  * POST /api/test/run
  * Execute unit tests in a sandboxed environment
  */
-router.post('/run', authenticateToken, async (req, res) => {
+router.post('/run', optionalAuth, async (req, res) => {
     try {
         const { language, code, tests } = req.body;
 
