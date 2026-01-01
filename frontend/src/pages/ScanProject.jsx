@@ -356,19 +356,26 @@ function ScanProject() {
                                 <div className="result-header">
                                     {result.success ? <FiCheck /> : '❌'}
                                     <span>{result.file}</span>
+                                    {result.success && result.tests && (
+                                        <span className="line-count">
+                                            {result.tests.split('\n').length} lines
+                                        </span>
+                                    )}
                                 </div>
                                 {result.success ? (
                                     <div className="result-preview">
-                                        <pre>{result.tests?.slice(0, 500)}...</pre>
-                                        <button
-                                            className="btn btn-secondary"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(result.tests);
-                                                toast.success('Copied!');
-                                            }}
-                                        >
-                                            📋 Copy
-                                        </button>
+                                        <pre>{result.tests}</pre>
+                                        <div className="result-actions">
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(result.tests);
+                                                    toast.success('Copied full code!');
+                                                }}
+                                            >
+                                                📋 Copy All ({result.tests?.split('\n').length} lines)
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <p className="error-msg">{result.error}</p>
