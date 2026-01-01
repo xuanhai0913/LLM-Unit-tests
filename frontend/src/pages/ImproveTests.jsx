@@ -319,12 +319,14 @@ function ImproveTests() {
         const startTime = Date.now();
 
         try {
-            // Try real API first
+            const language = selectedModule.language || 'javascript';
+            const framework = language === 'python' ? 'pytest' : 'jest';
+
             const result = await generateImprovements({
                 sourceCode: selectedModule.sourceCode,
-                existingTests: selectedModule.existingTests,
-                language: 'javascript',
-                framework: 'jest',
+                existingTests: selectedModule.existingTests || '',
+                language,
+                framework,
                 gaps: selectedModule.gaps.map(g => g.name),
                 llmProvider
             });
@@ -332,18 +334,51 @@ function ImproveTests() {
             if (result.success) {
                 setGeneratedTests(result.data.additionalTests);
                 setGenerationTime(result.data.generationTime);
-                toast.success(`Generated ${result.data.newTestCount || 6} additional tests!`);
+                toast.success(`Generated ${result.data.newTestCount || 'new'} additional tests!`);
+            } else {
+                toast.error('Failed to generate improvements');
             }
         } catch (error) {
-            console.log('Using mock data due to API error');
-            // Fallback to mock
-            setTimeout(() => {
-                setGeneratedTests(MOCK_GENERATED_TESTS);
-                setGenerationTime(Date.now() - startTime);
-                toast.success('Generated 6 additional tests!');
-            }, 2000);
+            console.error('Improvement error:', error);
+            const msg = error.response?.data?.error || error.message;
+            toast.error(`Error: ${msg}`);
         } finally {
-            setTimeout(() => setIsGenerating(false), 2000);
+            setIsGenerating(false);
+        }
+    };
+
+    const handleRunTests = async () => {
+        if (!generatedTests) return;
+        const toastId = toast.loading('Running tests...');
+        try {
+            const language = selectedModule.language || 'javascript';
+            // Run the generated code. In a real scenario we might merge with existing tests first.
+            // For now, we assume generatedTests includes necessary mocks/setup or imports.
+            // But usually we need source code presence?
+            // The runTests API expects code + tests.
+            // We pass sourceCode and invalid/partial tests?
+            // Actually runTests takes { code, tests, language }.
+
+            const result = await runTests({
+                code: selectedModule.sourceCode,
+                tests: generatedTests,
+                language
+            });
+
+            toast.dismiss(toastId);
+            if (result.success && result.testResult) {
+                if (result.testResult.passed) {
+                    toast.success('Tests Passed!');
+                } else {
+                    toast.error('Tests Failed');
+                    // Optionally show logs
+                }
+            } else {
+                toast.error('Failed to execute tests');
+            }
+        } catch (error) {
+            toast.dismiss(toastId);
+            toast.error('Error running tests');
         }
     };
 
