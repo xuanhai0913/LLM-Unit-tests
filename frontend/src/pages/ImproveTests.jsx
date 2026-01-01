@@ -204,30 +204,81 @@ function ImproveTests() {
             const data = await response.json();
 
             if (data.success) {
-                // Convert scanned files to module format
-                const convertedModules = data.data.files.map((file, idx) => ({
-                    id: idx + 1,
-                    name: file.name,
-                    path: file.path,
-                    testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
-                    tests: Math.floor(Math.random() * 5) + 1,
-                    coverage: Math.floor(Math.random() * 50) + 20,
-                    targetCoverage: 85,
-                    gaps: [
-                        { name: 'Error handling', lines: '20-30', priority: 'HIGH' },
-                        { name: 'Edge cases', lines: '45-50', priority: 'MEDIUM' }
-                    ],
-                    sourceCode: '',
-                    existingTests: '',
-                    url: file.url
-                }));
+                toast.success(`Found ${data.data.files.length} files. Analyzing...`);
 
-                setScannedModules(convertedModules);
+                // Analyze each file with LLM (limit to first 10 for performance)
+                const filesToAnalyze = data.data.files.slice(0, 10);
+                const analyzedModules = [];
+
+                for (let i = 0; i < filesToAnalyze.length; i++) {
+                    const file = filesToAnalyze[i];
+
+                    try {
+                        // Fetch file content
+                        const contentRes = await fetch(`${API_URL}/scan/github/content`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: file.url })
+                        });
+                        const contentData = await contentRes.json();
+                        const sourceCode = contentData.success ? contentData.data.content : '';
+
+                        // Analyze with LLM
+                        let analysis = { gaps: [], estimatedCoverage: 30, totalFunctions: 0 };
+                        if (sourceCode) {
+                            const analyzeRes = await fetch(`${API_URL}/analyze/file`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    sourceCode,
+                                    fileName: file.name,
+                                    language: file.language || 'javascript'
+                                })
+                            });
+                            const analyzeData = await analyzeRes.json();
+                            if (analyzeData.success) {
+                                analysis = analyzeData.data;
+                            }
+                        }
+
+                        analyzedModules.push({
+                            id: i + 1,
+                            name: file.name,
+                            path: file.path,
+                            testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
+                            tests: analysis.testedFunctions || 0,
+                            coverage: analysis.estimatedCoverage || 30,
+                            targetCoverage: 85,
+                            gaps: analysis.gaps.length > 0 ? analysis.gaps : [
+                                { name: 'Needs analysis', lines: '1-10', priority: 'MEDIUM', reason: 'Unable to analyze' }
+                            ],
+                            sourceCode: sourceCode,
+                            existingTests: '',
+                            url: file.url,
+                            totalFunctions: analysis.totalFunctions || 0
+                        });
+                    } catch (e) {
+                        console.error(`Failed to analyze ${file.name}:`, e);
+                        analyzedModules.push({
+                            id: i + 1,
+                            name: file.name,
+                            path: file.path,
+                            tests: 0,
+                            coverage: 25,
+                            targetCoverage: 85,
+                            gaps: [{ name: 'Analysis failed', lines: '?', priority: 'LOW', reason: e.message }],
+                            sourceCode: '',
+                            url: file.url
+                        });
+                    }
+                }
+
+                setScannedModules(analyzedModules);
                 setProjectInfo({
                     name: data.data.repoName,
                     files: data.data.files.length
                 });
-                toast.success(`Scanned ${data.data.files.length} files from ${data.data.repoName}`);
+                toast.success(`Analyzed ${analyzedModules.length} files with LLM`);
             } else {
                 toast.error(data.error || 'Failed to scan');
             }
