@@ -421,7 +421,7 @@ function ScanProject() {
                                                         const testResult = await runTests({
                                                             code: sourceCode,
                                                             tests: result.tests,
-                                                            language: language
+                                                            language: file?.language || language
                                                         });
 
                                                         // Update with results
