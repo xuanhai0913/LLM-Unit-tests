@@ -489,14 +489,35 @@ function ScanProject() {
                                                     toast.success('Downloaded test file!');
                                                 }}
                                             >
-                                                 Download
+                                                Download
                                             </button>
                                             <button
                                                 className="btn btn-accent"
-                                                onClick={() => {
+                                                onClick={async () => {
+                                                    const file = scannedFiles.find(f => f.name === result.file);
+                                                    let sourceCode = file?.content || '';
+
+                                                    // If no content cached, try to fetch from GitHub
+                                                    if (!sourceCode && file?.url) {
+                                                        try {
+                                                            toast.loading('Fetching source code...');
+                                                            const res = await fetch(`${API_URL}/scan/github/content`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ url: file.url })
+                                                            });
+                                                            const data = await res.json();
+                                                            sourceCode = data.success ? data.data.content : '';
+                                                            toast.dismiss();
+                                                        } catch (e) {
+                                                            console.error('Failed to fetch source:', e);
+                                                            toast.dismiss();
+                                                        }
+                                                    }
+
                                                     // Store test in sessionStorage and navigate to Improve
                                                     sessionStorage.setItem('improveTestData', JSON.stringify({
-                                                        sourceCode: scannedFiles.find(f => f.name === result.file)?.content || '',
+                                                        sourceCode: sourceCode,
                                                         existingTests: result.tests,
                                                         fileName: result.file,
                                                         path: result.path
