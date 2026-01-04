@@ -90,9 +90,9 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 7. Add comments explaining what each new test covers
 8. **CRITICAL: REUSE EXISTING STRUCTURE**:
    - Analyze the "EXISTING TESTS" section carefully.
-   - COPY the exact `import ` paths, `jest.unstable_mockModule` calls, and `beforeEach` setup from there.
+   - COPY the exact \`import\` paths, \`jest.unstable_mockModule\` calls, and \`beforeEach\` setup from there.
    - Do NOT invent new import paths. Use the ones already working in the provided code.
-   - Use the exact same variable names for modules (e.g., if existing test uses `User`, do not use `userModel`).
+   - Use the exact same variable names for modules (e.g., if existing test uses \`User\`, do not use \`userModel\`).
 9. IF using 'fetch' in code, MOCK IT globally.
 
 ## OUTPUT FORMAT:
