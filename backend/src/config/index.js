@@ -46,7 +46,7 @@ const config = {
 
     // Generation Settings
     generation: {
-        maxTokens: parseInt(process.env.MAX_TOKENS || '4096'),
+        maxTokens: parseInt(process.env.MAX_TOKENS || '8192'),
         temperature: parseFloat(process.env.TEMPERATURE || '0.7'),
         topP: parseFloat(process.env.TOP_P || '0.95'),
     },

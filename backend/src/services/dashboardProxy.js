@@ -24,6 +24,7 @@ export async function generateWithDashboardProxy(licenseKey, prompt) {
             {
                 userKey: licenseKey,
                 prompt: prompt,
+                maxOutputTokens: 8192,
             },
             {
                 headers: {
