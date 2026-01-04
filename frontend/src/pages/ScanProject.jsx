@@ -525,7 +525,7 @@ function ScanProject() {
                                                     window.location.href = '/improve';
                                                 }}
                                             >
-                                                🔄 Improve This
+                                                Improve This
                                             </button>
                                         </div>
                                     </div>
