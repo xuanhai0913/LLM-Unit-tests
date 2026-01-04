@@ -113,12 +113,31 @@ export function extractCodeBlocks(text, language = 'python') {
     let inBlock = false;
     let currentBlock = [];
 
+    // Build list of language aliases to match
+    const langAliases = [language.toLowerCase()];
+    if (language === 'javascript' || language === 'js') {
+        langAliases.push('javascript', 'js', 'jsx');
+    } else if (language === 'typescript' || language === 'ts') {
+        langAliases.push('typescript', 'ts', 'tsx');
+    } else if (language === 'python' || language === 'py') {
+        langAliases.push('python', 'py');
+    }
+
     for (const line of lines) {
-        if (line.startsWith(`\`\`\`${language}`) || line.startsWith('```python') || line.startsWith('```')) {
+        const trimmedLine = line.trim();
+        
+        // Check if line is a code fence (opening or closing)
+        if (trimmedLine.startsWith('```')) {
+            const fenceLang = trimmedLine.slice(3).trim().toLowerCase();
+            
             if (!inBlock) {
-                inBlock = true;
-                currentBlock = [];
+                // Opening fence - check if it matches our language or is generic
+                if (fenceLang === '' || langAliases.includes(fenceLang)) {
+                    inBlock = true;
+                    currentBlock = [];
+                }
             } else {
+                // Closing fence (just ```)
                 inBlock = false;
                 if (currentBlock.length > 0) {
                     blocks.push(currentBlock.join('\n'));
@@ -127,6 +146,11 @@ export function extractCodeBlocks(text, language = 'python') {
         } else if (inBlock) {
             currentBlock.push(line);
         }
+    }
+
+    // Handle case where code block was never closed
+    if (inBlock && currentBlock.length > 0) {
+        blocks.push(currentBlock.join('\n'));
     }
 
     return blocks;
