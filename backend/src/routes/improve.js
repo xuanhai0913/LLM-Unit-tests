@@ -91,19 +91,19 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 8. **CRITICAL: REUSE EXISTING STRUCTURE & IMPORT STRATEGY**:
    - Analyze the "EXISTING TESTS" section carefully.
    - **DO NOT use top-level await for imports.**
-   - DECLARE variables at the top level (e.g., `let User, jwt, authRouter; `).
-   - USE \`beforeAll(async () => { ... })\` inside the main \`describe\` block to load modules.
+   - DECLARE variables at the top level (e.g., \`let User, jwt, authRouter; \`).
+   - USAGE: Use \`beforeAll(async () => { ... })\` inside the main \`describe\` block to load modules.
    - COPY the \`jest.unstable_mockModule\` calls exactly as they are (must be top-level).
    - See example:
      \`\`\`javascript
-let User;
-describe('Tests', () => {
-    beforeAll(async () => {
-        User = (await import('../path/to/model')).User;
-    });
-    // tests...
-});
-\`\`\`
+     let User;
+     describe('Tests', () => {
+         beforeAll(async () => {
+             User = (await import('../path/to/model')).User;
+         });
+         // tests...
+     });
+     \`\`\`
    - Use the exact same variable names.
 9. IF using 'fetch' in code, MOCK IT globally.
 
