@@ -21,17 +21,36 @@ function decryptKey(encryptedKey) {
 }
 
 /**
- * Build improvement prompt for LLM
+ * Build improvement prompt for LLM with PROJECT CONTEXT
  */
-function buildImprovementPrompt({ sourceCode, existingTests, language, framework, gaps }) {
+function buildImprovementPrompt({ sourceCode, existingTests, language, framework, gaps, projectContext }) {
     const isJest = framework === 'jest';
     const jestInstructions = isJest ? `
 - IMPORTANT: The code under test is stored in "./index.js". Import functions using require('./index').
 - IMPORTANT: Mock external libraries using jest.mock(..., ..., { virtual: true }).
 - TIP: Suppress console.error with jest.spyOn(console, 'error').mockImplementation(() => {}).` : '';
 
-    return `You are an expert test engineer improving an existing test suite.
+    // Build project context section if available
+    let projectContextSection = '';
+    if (projectContext && projectContext.length > 0) {
+        projectContextSection = `
+## PROJECT STRUCTURE (Related files for context):
+${projectContext.map(file => `
+### ${file.name} (${file.path}):
+\`\`\`${language}
+${file.content?.slice(0, 1500) || '// Content not available'}${file.content?.length > 1500 ? '\n// ... (truncated)' : ''}
+\`\`\`
+`).join('\n')}
 
+Use this context to understand:
+- How models/data structures are defined
+- What middleware/utilities are available
+- Import paths and naming conventions
+`;
+    }
+
+    return `You are an expert test engineer improving an existing test suite.
+${projectContextSection}
 ## SOURCE CODE TO TEST:
 \`\`\`${language}
 ${sourceCode}
@@ -56,6 +75,7 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 5. Include descriptive test names that explain what they test
 6. Include edge cases and error scenarios
 7. Add comments explaining what each new test covers
+8. Use the PROJECT STRUCTURE above to correctly import/mock dependencies
 
 ## OUTPUT FORMAT:
 Return ONLY the new test code to ADD to the existing file.
@@ -194,7 +214,8 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
             language = 'javascript',
             framework = 'jest',
             gaps = [],
-            llmProvider
+            llmProvider,
+            projectContext = [] // NEW: Array of related files for context
         } = req.body;
 
         if (!sourceCode) {
@@ -203,13 +224,14 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
             });
         }
 
-        // Build improvement prompt
+        // Build improvement prompt with project context
         const prompt = buildImprovementPrompt({
             sourceCode,
             existingTests,
             language,
             framework,
-            gaps
+            gaps,
+            projectContext // Pass project context to prompt builder
         });
 
         // Determine API key and provider

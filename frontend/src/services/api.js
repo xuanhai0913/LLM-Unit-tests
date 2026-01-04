@@ -99,14 +99,15 @@ export async function analyzeTests({ sourceCode, existingTests, language, framew
 /**
  * Generate additional tests to fill coverage gaps
  */
-export async function generateImprovements({ sourceCode, existingTests, language, framework, gaps, llmProvider }) {
+export async function generateImprovements({ sourceCode, existingTests, language, framework, gaps, llmProvider, projectContext }) {
     const response = await api.post('/improve/generate', {
         sourceCode,
         existingTests,
         language,
         framework,
         gaps,
-        llmProvider
+        llmProvider,
+        projectContext // NEW: Send related files for context
     });
     return response.data;
 }

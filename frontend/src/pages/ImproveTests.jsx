@@ -412,13 +412,24 @@ function ImproveTests() {
             const language = selectedModule.language || 'javascript';
             const framework = language === 'python' ? 'pytest' : 'jest';
 
+            // Build project context from other scanned modules (for LLM to understand project structure)
+            const projectContext = scannedModules
+                .filter(m => m.id !== selectedModule.id) // Exclude currently selected file
+                .slice(0, 5) // Limit to 5 files to avoid token overflow
+                .map(m => ({
+                    name: m.name,
+                    path: m.path,
+                    content: m.sourceCode || ''
+                }));
+
             const result = await generateImprovements({
                 sourceCode: selectedModule.sourceCode,
                 existingTests: selectedModule.existingTests || '',
                 language,
                 framework,
                 gaps: selectedModule.gaps.map(g => g.name),
-                llmProvider
+                llmProvider,
+                projectContext // Send other files for context
             });
 
             if (result.success) {
