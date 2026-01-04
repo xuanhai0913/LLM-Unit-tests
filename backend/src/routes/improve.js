@@ -87,11 +87,13 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 5. Include descriptive test names that explain what they test
 6. Include edge cases and error scenarios
 7. Add comments explaining what each new test covers
-8. Use the PROJECT STRUCTURE above to correctly import/mock dependencies
-9. ENSURE ALL IMPORTS use proper relative paths and include '.js' extension.
-   - If tests are in 'tests/' and source in 'src/', use '../src/path/to/file.js'.
-   - Check the file paths in PROJECT STRUCTURE to determine the correct relative path.
-10. IF using 'fetch' in code, MOCK IT globally.
+7. Add comments explaining what each new test covers
+8. **CRITICAL: REUSE EXISTING STRUCTURE**:
+   - Analyze the "EXISTING TESTS" section carefully.
+   - COPY the exact `import ` paths, `jest.unstable_mockModule` calls, and `beforeEach` setup from there.
+   - Do NOT invent new import paths. Use the ones already working in the provided code.
+   - Use the exact same variable names for modules (e.g., if existing test uses `User`, do not use `userModel`).
+9. IF using 'fetch' in code, MOCK IT globally.
 
 ## OUTPUT FORMAT:
 Return ONLY the new test code to ADD to the existing file.
