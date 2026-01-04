@@ -138,8 +138,33 @@ router.post('/github', optionalAuth, async (req, res) => {
                 size: item.size,
                 // Estimate lines (avg 30 chars per line)
                 estimatedLines: item.size ? Math.ceil(item.size / 30) : 0,
-                language: getLanguage(ext)
+                language: getLanguage(ext),
+                // Mark as important for context if in models/middleware/config
+                isContextFile: item.path.includes('models') ||
+                    item.path.includes('middleware') ||
+                    item.path.includes('config') ||
+                    item.path.includes('utils') ||
+                    item.path.includes('types')
             });
+        }
+
+        // Auto-fetch content for important context files (models, middleware, config)
+        const contextFiles = scannedFiles.filter(f => f.isContextFile).slice(0, 8);
+        for (const file of contextFiles) {
+            try {
+                const contentRes = await fetch(file.url, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'LLM-Unit-Tests'
+                    }
+                });
+                if (contentRes.ok) {
+                    const contentData = await contentRes.json();
+                    file.content = Buffer.from(contentData.content, 'base64').toString('utf-8');
+                }
+            } catch (e) {
+                console.log(`Failed to fetch content for ${file.name}:`, e.message);
+            }
         }
 
         res.json({
@@ -148,7 +173,8 @@ router.post('/github', optionalAuth, async (req, res) => {
                 repoName: `${owner}/${repoName}`,
                 branch,
                 files: scannedFiles,
-                totalFiles: scannedFiles.length
+                totalFiles: scannedFiles.length,
+                contextFilesLoaded: contextFiles.length
             }
         });
 
