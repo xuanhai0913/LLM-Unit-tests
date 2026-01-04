@@ -260,7 +260,7 @@ router.post('/generate', optionalAuth, async (req, res, next) => {
             existingTests,
             language,
             framework,
-            gaps,
+            gaps: gaps.slice(0, 5), // Limit to top 5 gaps to prevent token truncation via Proxy
             projectContext // Pass project context to prompt builder
         });
 

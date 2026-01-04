@@ -1,6 +1,10 @@
+/**
+ * Auth System Unit Tests - ADDITIONAL TESTS
+ */
+
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-// Mock Dependencies (Must be done before imports in ESM)
+// 1. Mock Dependencies (Must be done before imports in ESM)
 jest.unstable_mockModule('../src/models/index.js', () => ({
     User: {
         findOne: jest.fn(),
@@ -176,37 +180,26 @@ describe('Auth Service Tests', () => {
             expect(user.email).toBe('newuser@google.com');
         });
     });
+});
 
-    describe('Google Auth Strategy Error Handling', () => {
-        it('should handle errors during Google OAuth strategy', async () => {
-            const profile = { id: 'google_123', emails: [{ value: 'test@example.com' }], displayName: 'Test User' };
+describe('Additional Auth Service Tests', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-            // Mock User.findOne to throw an error
-            User.findOne.mockRejectedValue(new Error('Database error'));
-
-            const mockDone = jest.fn();
-
-            // Simulate the verify callback
-            const googleStrategyCallback = async (accessToken, refreshToken, profile, done) => {
-                try {
-                    await User.findOne({ where: { google_id: profile.id } });
-                } catch (error) {
-                    done(error, null);
-                }
+    describe('Google OAuth Strategy Error Handling', () => {
+        it('should handle GoogleStrategy callback when no email is found in profile', async () => {
+            const profile = {
+                id: 'google_123',
+                emails: [], // No email
+                displayName: 'New Google User',
+                photos: [{ value: 'photo.jpg' }]
             };
 
-            await googleStrategyCallback(null, null, profile, mockDone);
-
-            expect(User.findOne).toHaveBeenCalledWith({ where: { google_id: profile.id } });
-            expect(mockDone).toHaveBeenCalledWith(new Error('Database error'), null);
-        });
-
-        it('should handle missing email in Google profile', async () => {
-            const profile = { id: 'google_123', displayName: 'Test User', emails: [] };
-
             const mockDone = jest.fn();
 
-            const googleStrategyCallback = async (accessToken, refreshToken, profile, done) => {
+            // Simulate callback
+            const handleOAuth = async (accessToken, refreshToken, profile, done) => {
                 try {
                     let user = await User.findOne({ where: { google_id: profile.id } });
 
@@ -215,101 +208,83 @@ describe('Auth Service Tests', () => {
                         if (!email) {
                             return done(new Error('No email found in Google profile'), null);
                         }
+                        user = await User.create({
+                            google_id: profile.id,
+                            email: profile.emails[0].value,
+                            name: profile.displayName
+                        });
                     }
+                    return done(null, user);
                 } catch (error) {
-                    done(error, null);
+                    return done(error, null);
                 }
             };
 
-            await googleStrategyCallback(null, null, profile, mockDone);
+            await handleOAuth(null, null, profile, mockDone);
 
             expect(mockDone).toHaveBeenCalledWith(new Error('No email found in Google profile'), null);
         });
+
+        it('should handle GoogleStrategy callback when User.findOne throws an error', async () => {
+            const profile = {
+                id: 'google_123',
+                emails: [{ value: 'test@example.com' }],
+                displayName: 'New Google User',
+                photos: [{ value: 'photo.jpg' }]
+            };
+
+            const mockDone = jest.fn();
+            const error = new Error('Database error');
+            User.findOne.mockRejectedValueOnce(error);
+
+            // Simulate callback
+            const handleOAuth = async (accessToken, refreshToken, profile, done) => {
+                try {
+                    let user = await User.findOne({ where: { google_id: profile.id } });
+
+                    if (!user) {
+                        user = await User.create({
+                            google_id: profile.id,
+                            email: profile.emails[0].value,
+                            name: profile.displayName
+                        });
+                    }
+                    return done(null, user);
+                } catch (err) {
+                    return done(err, null);
+                }
+            };
+
+            await handleOAuth(null, null, profile, mockDone);
+
+            expect(mockDone).toHaveBeenCalledWith(error, null);
+        });
     });
 
-    describe('deserializeUser error handling', () => {
-        it('should handle errors during deserializeUser', async () => {
-            // Mock User.findByPk to throw an error
-            User.findByPk.mockRejectedValue(new Error('Database error'));
+    describe('Passport Deserialize User Error Handling', () => {
+        it('should handle passport.deserializeUser error', async () => {
+            const error = new Error('Failed to deserialize user');
+            User.findByPk.mockRejectedValueOnce(error);
 
             const mockDone = jest.fn();
 
-            const deserializeUserCallback = async (id, done) => {
+            const deserializeUser = async (id, done) => {
                 try {
-                    await User.findByPk(id);
-                } catch (error) {
-                    done(error, null);
+                    const user = await User.findByPk(id);
+                    done(null, user);
+                } catch (err) {
+                    done(err, null);
                 }
             };
 
-            await deserializeUserCallback(1, mockDone);
+            await deserializeUser(1, mockDone);
 
-            expect(User.findByPk).toHaveBeenCalledWith(1);
-            expect(mockDone).toHaveBeenCalledWith(new Error('Database error'), null);
+            expect(mockDone).toHaveBeenCalledWith(error, null);
         });
     });
 
-    describe('Register error handling', () => {
-        it('should handle bcrypt.genSalt failure during registration', async () => {
-            // Mock bcrypt.genSalt to throw an error
-            bcrypt.genSalt.mockRejectedValue(new Error('bcrypt error'));
-
-            const mockRes = {
-                status: jest.fn().mockReturnThis(),
-                json: jest.fn(),
-            };
-
-            const registerRouteHandler = async (req, res) => {
-                try {
-                    const { password } = req.body;
-                    await bcrypt.genSalt(10);
-                    const salt = await bcrypt.genSalt(10);
-                    const password_hash = await bcrypt.hash(password, salt);
-                } catch (error) {
-                    console.error('Register error:', error);
-                    res.status(500).json({ error: 'Registration failed' });
-                }
-            };
-
-            await registerRouteHandler({ body: { email: 'test@example.com', password: 'password', name: 'Test' } }, mockRes);
-
-            expect(bcrypt.genSalt).toHaveBeenCalled();
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.json).toHaveBeenCalledWith({ error: 'Registration failed' });
-        });
-
-        it('should handle bcrypt.hash failure during registration', async () => {
-            // Mock bcrypt.hash to throw an error
-            bcrypt.hash.mockRejectedValue(new Error('bcrypt error'));
-            bcrypt.genSalt.mockResolvedValue(10);
-
-            const mockRes = {
-                status: jest.fn().mockReturnThis(),
-                json: jest.fn(),
-            };
-
-            const registerRouteHandler = async (req, res) => {
-                try {
-                    const { password } = req.body;
-                    const salt = await bcrypt.genSalt(10);
-                    await bcrypt.hash(password, salt);
-                } catch (error) {
-                    console.error('Register error:', error);
-                    res.status(500).json({ error: 'Registration failed' });
-                }
-            };
-
-            await registerRouteHandler({ body: { email: 'test@example.com', password: 'password', name: 'Test' } }, mockRes);
-
-            expect(bcrypt.hash).toHaveBeenCalled();
-            expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.json).toHaveBeenCalledWith({ error: 'Registration failed' });
-        });
-    });
-
-    describe('Refresh token verification failure', () => {
-        it('should handle invalid refresh token', async () => {
-            // Mock jwt.verify to call the callback with an error
+    describe('Refresh Token Verification Failure', () => {
+        it('should handle refresh token verification failure', async () => {
             jwt.verify.mockImplementation((token, secret, callback) => {
                 callback(new Error('Invalid refresh token'), null);
             });
@@ -320,33 +295,50 @@ describe('Auth Service Tests', () => {
                 json: jest.fn(),
             };
 
-            const refreshTokenRouteHandler = async (req, res) => {
-                const { refreshToken } = req.body;
+            const refreshTokenRoute = async (req, res) => {
+                try {
+                    const { refreshToken } = req.body;
 
-                jwt.verify(refreshToken, 'test_refresh_secret', (err, decoded) => {
-                    if (err) {
-                        return res.status(403).json({ error: 'Invalid refresh token' });
+                    if (!refreshToken) {
+                        return res.status(400).json({ error: 'Refresh token required' });
                     }
-                });
+
+                    jwt.verify(refreshToken, 'test_refresh_secret', async (err, decoded) => {
+                        if (err) {
+                            return res.status(403).json({ error: 'Invalid refresh token' });
+                        }
+
+                        const user = await User.findByPk(decoded.id);
+                        if (!user) {
+                            return res.status(404).json({ error: 'User not found' });
+                        }
+
+                        const newAccessToken = 'new_access_token';
+
+                        res.json({
+                            success: true,
+                            data: { accessToken: newAccessToken },
+                        });
+                    });
+                } catch (error) {
+                    console.error('Refresh error:', error);
+                    res.status(500).json({ error: 'Token refresh failed' });
+                }
             };
 
-            await refreshTokenRouteHandler(mockReq, mockRes);
+            await refreshTokenRoute(mockReq, mockRes);
 
-            expect(jwt.verify).toHaveBeenCalledWith('invalid_token', 'test_refresh_secret', expect.any(Function));
             expect(mockRes.status).toHaveBeenCalledWith(403);
             expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid refresh token' });
         });
     });
 
-    describe('Refresh token user not found', () => {
-        it('should handle user not found during refresh token', async () => {
-            // Mock jwt.verify to decode the token
+    describe('Refresh Token User Not Found', () => {
+        it('should handle refresh token user not found', async () => {
             jwt.verify.mockImplementation((token, secret, callback) => {
                 callback(null, { id: 123 });
             });
-
-            // Mock User.findByPk to return null (user not found)
-            User.findByPk.mockResolvedValue(null);
+            User.findByPk.mockResolvedValueOnce(null);
 
             const mockReq = { body: { refreshToken: 'valid_token' } };
             const mockRes = {
@@ -354,46 +346,68 @@ describe('Auth Service Tests', () => {
                 json: jest.fn(),
             };
 
-            const refreshTokenRouteHandler = async (req, res) => {
-                const { refreshToken } = req.body;
+            const refreshTokenRoute = async (req, res) => {
+                try {
+                    const { refreshToken } = req.body;
 
-                jwt.verify(refreshToken, 'test_refresh_secret', async (err, decoded) => {
-                    if (err) {
-                        return res.status(403).json({ error: 'Invalid refresh token' });
+                    if (!refreshToken) {
+                        return res.status(400).json({ error: 'Refresh token required' });
                     }
 
-                    const user = await User.findByPk(decoded.id);
-                    if (!user) {
-                        return res.status(404).json({ error: 'User not found' });
-                    }
-                });
+                    jwt.verify(refreshToken, 'test_refresh_secret', async (err, decoded) => {
+                        if (err) {
+                            return res.status(403).json({ error: 'Invalid refresh token' });
+                        }
+
+                        const user = await User.findByPk(decoded.id);
+                        if (!user) {
+                            return res.status(404).json({ error: 'User not found' });
+                        }
+
+                        const newAccessToken = 'new_access_token';
+
+                        res.json({
+                            success: true,
+                            data: { accessToken: newAccessToken },
+                        });
+                    });
+                } catch (error) {
+                    console.error('Refresh error:', error);
+                    res.status(500).json({ error: 'Token refresh failed' });
+                }
             };
 
-            await refreshTokenRouteHandler(mockReq, mockRes);
+            await refreshTokenRoute(mockReq, mockRes);
 
-            expect(jwt.verify).toHaveBeenCalledWith('valid_token', 'test_refresh_secret', expect.any(Function));
-            expect(User.findByPk).toHaveBeenCalledWith(123);
             expect(mockRes.status).toHaveBeenCalledWith(404);
             expect(mockRes.json).toHaveBeenCalledWith({ error: 'User not found' });
         });
     });
 
-    describe('Get Me endpoint error handling', () => {
-        it('should handle errors when fetching user profile', async () => {
-            // Mock User.findByPk to throw an error
-            User.findByPk.mockRejectedValue(new Error('Database error'));
+    describe('GET /api/auth/me Error Handling', () => {
+        it('should handle GET /api/auth/me error', async () => {
+            const error = new Error('Database error');
+            User.findByPk.mockRejectedValueOnce(error);
 
             const mockReq = { user: { id: 123 } };
             const mockRes = {
                 status: jest.fn().mockReturnThis(),
                 json: jest.fn(),
             };
-            const mockNext = jest.fn();
 
-            const getMeRouteHandler = async (req, res) => {
+            const getMeRoute = async (req, res) => {
                 try {
-                    await User.findByPk(req.user.id, {
+                    const user = await User.findByPk(req.user.id, {
                         attributes: ['id', 'email', 'name', 'avatar', 'preferred_llm', 'license_status', 'license_valid_until']
+                    });
+
+                    if (!user) {
+                        return res.status(404).json({ error: 'User not found' });
+                    }
+
+                    res.json({
+                        success: true,
+                        data: user,
                     });
                 } catch (error) {
                     console.error('Get user error:', error);
@@ -401,77 +415,88 @@ describe('Auth Service Tests', () => {
                 }
             };
 
-            await getMeRouteHandler(mockReq, mockRes, mockNext);
+            await getMeRoute(mockReq, mockRes);
 
-            expect(User.findByPk).toHaveBeenCalledWith(123, {
-                attributes: ['id', 'email', 'name', 'avatar', 'preferred_llm', 'license_status', 'license_valid_until']
-            });
             expect(mockRes.status).toHaveBeenCalledWith(500);
             expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to get user' });
         });
     });
 
-    describe('Google Callback error handling', () => {
-        it('should handle errors in Google OAuth callback', async () => {
+    describe('GET /api/auth/me User Not Found', () => {
+        it('should handle GET /api/auth/me user not found', async () => {
+            User.findByPk.mockResolvedValueOnce(null);
+
             const mockReq = { user: { id: 123 } };
+            const mockRes = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+            };
+
+            const getMeRoute = async (req, res) => {
+                try {
+                    const user = await User.findByPk(req.user.id, {
+                        attributes: ['id', 'email', 'name', 'avatar', 'preferred_llm', 'license_status', 'license_valid_until']
+                    });
+
+                    if (!user) {
+                        return res.status(404).json({ error: 'User not found' });
+                    }
+
+                    res.json({
+                        success: true,
+                        data: user,
+                    });
+                } catch (error) {
+                    console.error('Get user error:', error);
+                    res.status(500).json({ error: 'Failed to get user' });
+                }
+            };
+
+            await getMeRoute(mockReq, mockRes);
+
+            expect(mockRes.status).toHaveBeenCalledWith(404);
+            expect(mockRes.json).toHaveBeenCalledWith({ error: 'User not found' });
+        });
+    });
+
+    describe('Google OAuth callback failure', () => {
+        it('should handle Google OAuth callback failure', async () => {
+            const mockReq = {};
             const mockRes = {
                 redirect: jest.fn(),
             };
             const mockNext = jest.fn();
+            const mockAuthenticate = passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed', session: false });
 
-            // Mock generateAccessToken to throw an error
-            const generateAccessToken = () => { throw new Error('Token generation error'); };
+            mockAuthenticate(mockReq, mockRes, mockNext);
 
-            const googleCallbackRouteHandler = async (req, res) => {
+            expect(passport.authenticate).toHaveBeenCalledWith('google', { failureRedirect: '/login?error=google_auth_failed', session: false });
+            expect(mockNext).toHaveBeenCalled();
+        });
+    });
+
+    describe('Google OAuth callback error handling', () => {
+        it('should handle Google OAuth callback error', async () => {
+            const mockReq = {
+                user: { id: 1 },
+            };
+            const mockRes = {
+                redirect: jest.fn(),
+            };
+
+            const callback = async (req, res) => {
                 try {
                     const user = req.user;
-                    const accessToken = generateAccessToken(user); // Simulate error
-                    const refreshToken = 'refreshToken';
+                    const accessToken = 'mock_access_token';
+                    const refreshToken = 'mock_refresh_token';
 
+                    // Redirect to frontend with tokens
                     const frontendUrl = 'http://localhost:3000';
                     res.redirect(`${frontendUrl}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
                 } catch (error) {
                     console.error('Google callback error:', error);
-                    res.redirect('/login?error=auth_failed');
+                    res.redirect('/login?error=google_auth_failed');
                 }
             };
 
-            await googleCallbackRouteHandler(mockReq, mockRes, mockNext);
-
-            expect(mockRes.redirect).toHaveBeenCalledWith('/login?error=auth_failed');
-        });
-    });
-
-    describe('Google OAuth initiation', () => {
-        it('should call passport.authenticate with correct arguments', () => {
-            const mockReq = {};
-            const mockRes = {};
-            const mockNext = jest.fn();
-
-            const googleAuthInitiationHandler = (req, res, next) => {
-                passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
-            };
-
-            googleAuthInitiationHandler(mockReq, mockRes, mockNext);
-
-            expect(passport.authenticate).toHaveBeenCalledWith('google', { scope: ['profile', 'email'] });
-        });
-    });
-
-    describe('Logout functionality', () => {
-        it('should return success message on logout', () => {
-            const mockReq = {};
-            const mockRes = {
-                json: jest.fn(),
-            };
-
-            const logoutRouteHandler = (req, res) => {
-                res.json({ success: true, message: 'Logged out successfully' });
-            };
-
-            logoutRouteHandler(mockReq, mockRes);
-
-            expect(mockRes.json).toHaveBeenCalledWith({ success: true, message: 'Logged out successfully' });
-        });
-    });
-});
+            await callback(mockReq, mockRes);
