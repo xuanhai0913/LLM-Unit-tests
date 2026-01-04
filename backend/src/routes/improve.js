@@ -89,6 +89,8 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 7. Add comments explaining what each new test covers
 8. Use the PROJECT STRUCTURE above to correctly import/mock dependencies
 9. ENSURE ALL IMPORTS use proper relative paths and include '.js' extension.
+   - If tests are in 'tests/' and source in 'src/', use '../src/path/to/file.js'.
+   - Check the file paths in PROJECT STRUCTURE to determine the correct relative path.
 10. IF using 'fetch' in code, MOCK IT globally.
 
 ## OUTPUT FORMAT:
