@@ -177,6 +177,7 @@ function ImproveTests() {
     const [isScanning, setIsScanning] = useState(false);
     const [scannedModules, setScannedModules] = useState([]);
     const [projectInfo, setProjectInfo] = useState(null);
+    const [hasScanned, setHasScanned] = useState(false);
 
     // Folder upload ref
     const fileInputRef = useRef(null);
@@ -269,8 +270,8 @@ function ImproveTests() {
         }
     };
 
-    // Use scanned modules if available, otherwise mock data
-    const modules = scannedModules.length > 0 ? scannedModules : MOCK_MODULES;
+    // Only show modules after scanning (no more mock data fallback)
+    const modules = scannedModules;
 
     // Calculate average coverage
     const avgCoverage = Math.round(modules.reduce((sum, m) => sum + (m.coverage || 0), 0) / modules.length);
@@ -573,7 +574,13 @@ function ImproveTests() {
             </div>
 
             <div className="modules-grid">
-                {modules.map((module) => (
+                {modules.length === 0 ? (
+                    <div className="empty-state">
+                        <FiFolder className="empty-icon" />
+                        <h3>No Files Scanned</h3>
+                        <p>Scan a GitHub repository or upload a folder to get started.</p>
+                    </div>
+                ) : modules.map((module) => (
                     <div
                         key={module.id}
                         className={`module-card ${selectedModule?.id === module.id ? 'selected' : ''}`}
