@@ -644,3 +644,65 @@
 .btn-accent:hover {
     background: linear-gradient(135deg, #7c3aed, #9333ea);
 }
+
+/* Existing Tests Section */
+.existing-tests-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+}
+
+.existing-tests-section h4 {
+    color: var(--primary-orange);
+    margin-bottom: 0.5rem;
+}
+
+.existing-tests-section .section-hint {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.existing-tests-input {
+    width: 100%;
+    min-height: 200px;
+    padding: 1rem;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-primary);
+    resize: vertical;
+}
+
+.existing-tests-input:focus {
+    outline: none;
+    border-color: var(--primary-orange);
+}
+
+.existing-tests-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
+}
+
+.empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--primary-orange);
+}
+
+.empty-state h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}

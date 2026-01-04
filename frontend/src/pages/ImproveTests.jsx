@@ -680,6 +680,34 @@ function ImproveTests() {
                         </div>
                     </div>
 
+                    {/* Existing Tests Input - Core feature: "dựa trên test cases đã cho" */}
+                    <div className="existing-tests-section">
+                        <h4>📝 Your Existing Test Cases (Paste here):</h4>
+                        <p className="section-hint">
+                            Paste your current test code. AI will analyze it and generate additional tests to fill gaps.
+                        </p>
+                        <textarea
+                            className="existing-tests-input"
+                            placeholder={`// Paste your existing test cases here...
+// Example:
+describe('Auth', () => {
+    it('should login with correct password', () => {
+        // ...
+    });
+});`}
+                            value={selectedModule.existingTests || ''}
+                            onChange={(e) => {
+                                setScannedModules(prev => prev.map(m =>
+                                    m.id === selectedModule.id
+                                        ? { ...m, existingTests: e.target.value }
+                                        : m
+                                ));
+                                setSelectedModule(prev => ({ ...prev, existingTests: e.target.value }));
+                            }}
+                            rows={10}
+                        />
+                    </div>
+
                     <div className="generate-section">
                         <button
                             className="btn btn-primary btn-large generate-btn"
