@@ -474,6 +474,38 @@ function ScanProject() {
                                             >
                                                 Copy All
                                             </button>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => {
+                                                    const blob = new Blob([result.tests], { type: 'text/javascript' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = result.file.replace(/\.(js|ts|py)$/, '.test.$1') || 'generated_tests.js';
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    URL.revokeObjectURL(url);
+                                                    toast.success('Downloaded test file!');
+                                                }}
+                                            >
+                                                 Download
+                                            </button>
+                                            <button
+                                                className="btn btn-accent"
+                                                onClick={() => {
+                                                    // Store test in sessionStorage and navigate to Improve
+                                                    sessionStorage.setItem('improveTestData', JSON.stringify({
+                                                        sourceCode: scannedFiles.find(f => f.name === result.file)?.content || '',
+                                                        existingTests: result.tests,
+                                                        fileName: result.file,
+                                                        path: result.path
+                                                    }));
+                                                    window.location.href = '/improve';
+                                                }}
+                                            >
+                                                🔄 Improve This
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (

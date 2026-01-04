@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FiZap, FiAlertCircle, FiFileText, FiCheckCircle, FiPlay, FiArrowLeft, FiFolder, FiCpu } from 'react-icons/fi';
+import { useState, useRef, useEffect } from 'react';
+import { FiZap, FiAlertCircle, FiFileText, FiCheckCircle, FiPlay, FiArrowLeft, FiFolder, FiCpu, FiUpload, FiDownload } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { analyzeTests, generateImprovements, runTests } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -178,13 +178,102 @@ function ImproveTests() {
     const [scannedModules, setScannedModules] = useState([]);
     const [projectInfo, setProjectInfo] = useState(null);
 
+    // Folder upload ref
+    const fileInputRef = useRef(null);
+
     const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+    // Check for data from ScanProject page (via sessionStorage)
+    useEffect(() => {
+        const savedData = sessionStorage.getItem('improveTestData');
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                // Create a module from the passed data
+                const importedModule = {
+                    id: 999,
+                    name: data.fileName || 'Imported File',
+                    path: data.path || 'imported',
+                    testFile: data.fileName?.replace(/\.(js|ts|py)$/, '.test.$1') || 'imported.test.js',
+                    tests: data.existingTests ? data.existingTests.split(/describe|it|test/).length - 1 : 0,
+                    coverage: 50, // Estimated
+                    targetCoverage: 85,
+                    gaps: [
+                        { name: 'Edge cases', lines: '?', priority: 'HIGH' },
+                        { name: 'Error handling', lines: '?', priority: 'MEDIUM' }
+                    ],
+                    sourceCode: data.sourceCode || '',
+                    existingTests: data.existingTests || '',
+                    analyzed: true,
+                    language: data.fileName?.endsWith('.py') ? 'python' : 'javascript'
+                };
+                setScannedModules([importedModule]);
+                setSelectedModule(importedModule);
+                setProjectInfo({ name: 'Imported from Scan', files: 1 });
+                toast.success('Loaded test data from Scan Project');
+                sessionStorage.removeItem('improveTestData');
+            } catch (e) {
+                console.error('Failed to parse improve data:', e);
+            }
+        }
+    }, []);
+
+    // Handle folder upload
+    const handleFolderUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setIsScanning(true);
+
+        const formData = new FormData();
+        files.forEach(file => {
+            formData.append('files', file);
+        });
+
+        try {
+            const response = await fetch(`${API_URL}/scan/files`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const scannedFiles = data.data.files.map((file, idx) => ({
+                    id: idx + 1,
+                    name: file.name,
+                    path: file.path,
+                    testFile: `tests/${file.name.replace('.py', '_test.py').replace('.js', '.test.js')}`,
+                    tests: '?',
+                    coverage: null,
+                    targetCoverage: 85,
+                    gaps: [],
+                    sourceCode: file.content || '',
+                    existingTests: '',
+                    analyzed: false,
+                    isAnalyzing: false,
+                    language: file.name.endsWith('.py') ? 'python' : 'javascript'
+                }));
+
+                setScannedModules(scannedFiles);
+                setProjectInfo({ name: 'Uploaded Project', files: data.data.totalFiles });
+                toast.success(`Found ${data.data.totalFiles} source files`);
+            } else {
+                toast.error(data.error || 'Failed to scan files');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Failed to upload files');
+        } finally {
+            setIsScanning(false);
+        }
+    };
 
     // Use scanned modules if available, otherwise mock data
     const modules = scannedModules.length > 0 ? scannedModules : MOCK_MODULES;
 
     // Calculate average coverage
-    const avgCoverage = Math.round(modules.reduce((sum, m) => sum + m.coverage, 0) / modules.length);
+    const avgCoverage = Math.round(modules.reduce((sum, m) => sum + (m.coverage || 0), 0) / modules.length);
 
     // Scan GitHub for modules with existing tests
     const handleScanGithub = async () => {
@@ -419,7 +508,33 @@ function ImproveTests() {
                         {isScanning ? 'Scanning...' : ' Scan Repo'}
                     </button>
                 </div>
-                {!projectInfo && <p className="input-hint">Enter GitHub URL or use demo project below</p>}
+
+                <div className="input-divider">
+                    <span>OR</span>
+                </div>
+
+                {/* Folder Upload */}
+                <div className="folder-upload-row">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        webkitdirectory=""
+                        directory=""
+                        multiple
+                        onChange={handleFolderUpload}
+                        style={{ display: 'none' }}
+                    />
+                    <button
+                        className="btn btn-secondary upload-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isScanning}
+                    >
+                        <FiUpload /> Upload Folder
+                    </button>
+                    <span className="upload-hint">Select a project folder with source files</span>
+                </div>
+
+                {!projectInfo && <p className="input-hint">Enter GitHub URL, upload folder, or use demo project below</p>}
             </div>
 
             {/* Project Card */}
@@ -615,8 +730,22 @@ function ImproveTests() {
                         <button className="btn btn-secondary" onClick={handleCopy}>
                             📋 Copy to Clipboard
                         </button>
-                        <button className="btn btn-secondary">
-                            💾 Merge with {selectedModule.testFile.split('/').pop()}
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                const blob = new Blob([generatedTests], { type: 'text/javascript' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = selectedModule?.testFile?.split('/').pop() || 'improved_tests.js';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                toast.success('Downloaded test file!');
+                            }}
+                        >
+                            <FiDownload /> Download
                         </button>
                     </div>
                 </div>
