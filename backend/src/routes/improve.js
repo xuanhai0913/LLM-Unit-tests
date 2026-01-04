@@ -26,9 +26,21 @@ function decryptKey(encryptedKey) {
 function buildImprovementPrompt({ sourceCode, existingTests, language, framework, gaps, projectContext }) {
     const isJest = framework === 'jest';
     const jestInstructions = isJest ? `
-- IMPORTANT: The code under test is stored in "./index.js". Import functions using require('./index').
-- IMPORTANT: Mock external libraries using jest.mock(..., ..., { virtual: true }).
-- TIP: Suppress console.error with jest.spyOn(console, 'error').mockImplementation(() => {}).` : '';
+- IMPORTANT: This project uses ES Modules ("type": "module").
+- USE 'import' syntax, NOT 'require'.
+- For mocking dependencies in ESM:
+  1. Use 'jest.unstable_mockModule()' BEFORE importing the module under test.
+  2. Use 'await import()' to import the module under test inside 'beforeEach' or after mocks.
+  3. DO NOT use 'jest.mock()' with require inside tests.
+- Example ESM Mocking:
+  \`\`\`javascript
+  import { jest } from '@jest/globals';
+  jest.unstable_mockModule('../models/index.js', () => ({ User: { findOne: jest.fn() } }));
+  const { User } = await import('../models/index.js');
+  const authRouter = (await import('../src/routes/auth.js')).default;
+  \`\`\`
+- If mocking 'fetch', setup 'global.fetch = jest.fn();' in beforeEach.
+- ensure all imports include the '.js' extension (e.g., import ... from './utils.js').` : '';
 
     // Build project context section if available
     let projectContextSection = '';
@@ -76,6 +88,8 @@ Generate ADDITIONAL test cases to fill the coverage gaps.
 6. Include edge cases and error scenarios
 7. Add comments explaining what each new test covers
 8. Use the PROJECT STRUCTURE above to correctly import/mock dependencies
+9. ENSURE ALL IMPORTS use proper relative paths and include '.js' extension.
+10. IF using 'fetch' in code, MOCK IT globally.
 
 ## OUTPUT FORMAT:
 Return ONLY the new test code to ADD to the existing file.
