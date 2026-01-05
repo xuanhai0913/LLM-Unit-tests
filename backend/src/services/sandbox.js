@@ -60,6 +60,32 @@ class SandboxService {
 
                 await fs.writeFile(path.join(runDir, testFile), finalTestCode);
 
+                // Create stub files for mocked modules so Jest can resolve them
+                // Parse test code for jest.unstable_mockModule('path', ...) or jest.mock('path', ...)
+                const mockPathRegex = /jest\.(?:unstable_mockModule|mock)\s*\(\s*['"]([^'"]+)['"]/g;
+                let match;
+                const mockedPaths = new Set();
+                while ((match = mockPathRegex.exec(testCode)) !== null) {
+                    mockedPaths.add(match[1]);
+                }
+
+                // Create stub files for each mocked path
+                for (const mockPath of mockedPaths) {
+                    // Skip node_modules (external packages)
+                    if (!mockPath.startsWith('.') && !mockPath.startsWith('/')) {
+                        continue; // It's an npm package, skip
+                    }
+
+                    // Create the directory structure and stub file
+                    const stubPath = path.join(runDir, mockPath);
+                    const stubDir = path.dirname(stubPath);
+                    await fs.mkdir(stubDir, { recursive: true });
+
+                    // Create empty export stub
+                    const stubContent = '// Auto-generated stub for sandbox\\nexport default {};\\nexport const User = {};\\nexport const History = {};';
+                    await fs.writeFile(stubPath, stubContent);
+                }
+
                 // Create package.json with ESM support
                 await fs.writeFile(path.join(runDir, 'package.json'), JSON.stringify({
                     type: 'module'
