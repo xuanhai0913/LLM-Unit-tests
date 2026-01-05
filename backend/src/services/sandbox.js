@@ -40,7 +40,12 @@ class SandboxService {
                 const sourceFile = `index.${ext}`;
                 const testFile = `test_run.${ext}`;
 
-                // Always write source file
+                // Create tests/ subdirectory to match typical project structure
+                // This allows ../src/models/index.js to resolve to /app/src/models/index.js
+                const testsDir = path.join(runDir, 'tests');
+                await fs.mkdir(testsDir, { recursive: true });
+
+                // Always write source file to root (for simple imports)
                 await fs.writeFile(path.join(runDir, sourceFile), sourceCode);
 
                 let finalTestCode = testCode;
@@ -53,15 +58,14 @@ class SandboxService {
 
                 if (!hasImport && !hasMocks && !hasBeforeAllImports) {
                     // Only merge if test has no mocks and no dynamic imports
-                    // Fallback to merge logic if no import is detected
                     finalTestCode = `${sourceCode}\n\n${testCode}`;
                 }
-                // Otherwise, test is self-contained with its own mocks/imports
 
-                await fs.writeFile(path.join(runDir, testFile), finalTestCode);
+                // Write test file to tests/ subdirectory
+                await fs.writeFile(path.join(testsDir, testFile), finalTestCode);
 
                 // Create stub files for mocked modules so Jest can resolve them
-                // Parse test code for jest.unstable_mockModule('path', ...) or jest.mock('path', ...)
+                // Paths are relative to tests/ directory, so ../src becomes /app/src
                 const mockPathRegex = /jest\.(?:unstable_mockModule|mock)\s*\(\s*['"]([^'"]+)['"]/g;
                 let match;
                 const mockedPaths = new Set();
@@ -69,20 +73,27 @@ class SandboxService {
                     mockedPaths.add(match[1]);
                 }
 
-                // Create stub files for each mocked path
+                // Create stub files for each mocked path (relative to tests/ dir)
                 for (const mockPath of mockedPaths) {
-                    // Skip node_modules (external packages)
+                    // Skip node_modules (external packages like 'bcryptjs', 'jsonwebtoken')
                     if (!mockPath.startsWith('.') && !mockPath.startsWith('/')) {
-                        continue; // It's an npm package, skip
+                        continue;
                     }
 
-                    // Create the directory structure and stub file
-                    const stubPath = path.join(runDir, mockPath);
+                    // Resolve path relative to tests/ directory
+                    const stubPath = path.resolve(testsDir, mockPath);
                     const stubDir = path.dirname(stubPath);
                     await fs.mkdir(stubDir, { recursive: true });
 
-                    // Create empty export stub
-                    const stubContent = '// Auto-generated stub for sandbox\\nexport default {};\\nexport const User = {};\\nexport const History = {};';
+                    // Create ESM stub with common exports
+                    const stubContent = `// Auto-generated stub for sandbox
+export default {};
+export const User = {};
+export const History = {};
+export const jwt = { secret: 'test', refreshSecret: 'test', accessExpirationMinutes: 15, refreshExpirationDays: 7 };
+export const frontendUrl = 'http://localhost:3000';
+export const google = { clientId: 'id', clientSecret: 'secret', callbackUrl: 'url' };
+`;
                     await fs.writeFile(stubPath, stubContent);
                 }
 
@@ -94,15 +105,16 @@ class SandboxService {
                 // Create jest config with ESM support
                 await fs.writeFile(path.join(runDir, 'jest.config.json'), JSON.stringify({
                     testEnvironment: 'node',
-                    transform: {}, // Disable Babel transformation for native ESM
+                    transform: {},
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
                     coverageReporters: ['json-summary', 'text'],
-                    testMatch: [`**/${testFile}`]
+                    testMatch: [`**/tests/${testFile}`],
+                    rootDir: '.'
                 }));
 
                 // Run with jest coverage and ESM support (use global Jest path)
-                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json ${testFile}`;
+                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
