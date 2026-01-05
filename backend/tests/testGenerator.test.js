@@ -1,3 +1,7 @@
+/**
+ * Auth System Unit Tests
+ */
+
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // 1. Mock Dependencies (Must be done before imports in ESM)
@@ -56,17 +60,15 @@ jest.unstable_mockModule('passport-google-oauth20', () => ({
 }));
 
 // 2. Import Modules (using await import for ESM)
-let User, jwt, bcrypt, config, passport;
+const { User } = await import('../src/models/index.js');
+const jwt = (await import('jsonwebtoken')).default;
+const bcrypt = (await import('bcryptjs')).default;
+const passport = (await import('passport')).default;
+
+// Mock global fetch for API calls
+global.fetch = jest.fn();
 
 describe('Auth Service Tests', () => {
-
-    beforeAll(async () => {
-        User = (await import('../src/models/index.js')).User;
-        jwt = (await import('jsonwebtoken')).default;
-        bcrypt = (await import('bcryptjs')).default;
-        config = (await import('../src/config/index.js')).default;
-        passport = (await import('passport')).default;
-    });
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -102,61 +104,6 @@ describe('Auth Service Tests', () => {
             expect(exists).toBe(true);
             expect(User.findOne).toHaveBeenCalledWith({ where: { email: 'existing@test.com' } });
         });
-
-        it('should handle error when User.findOne fails in register', async () => {
-            // Mock User.findOne to reject with an error
-            User.findOne.mockRejectedValue(new Error('Database error'));
-
-            const register = async () => {
-                await User.findOne({ where: { email: 'test@example.com' } });
-            };
-
-            await expect(register()).rejects.toThrow('Database error');
-            expect(User.findOne).toHaveBeenCalled();
-        });
-
-        it('should handle error when bcrypt.genSalt fails in register', async () => {
-            // Mock bcrypt.genSalt to reject with an error
-            bcrypt.genSalt.mockRejectedValue(new Error('Salt generation failed'));
-
-            const register = async () => {
-                await bcrypt.genSalt(10);
-            };
-
-            await expect(register()).rejects.toThrow('Salt generation failed');
-            expect(bcrypt.genSalt).toHaveBeenCalled();
-        });
-
-        it('should handle error when bcrypt.hash fails in register', async () => {
-            // Mock bcrypt.hash to reject with an error
-            bcrypt.hash.mockRejectedValue(new Error('Hashing failed'));
-            bcrypt.genSalt.mockResolvedValue(10);
-
-            const register = async () => {
-                await bcrypt.hash('password', 10);
-            };
-
-            await expect(register()).rejects.toThrow('Hashing failed');
-            expect(bcrypt.hash).toHaveBeenCalled();
-        });
-
-        it('should handle error when User.create fails in register', async () => {
-            // Mock User.create to reject with an error
-            User.create.mockRejectedValue(new Error('User creation failed'));
-            bcrypt.genSalt.mockResolvedValue(10);
-            bcrypt.hash.mockResolvedValue('hashed_password');
-
-            const register = async () => {
-                await User.create({
-                    email: 'test@example.com',
-                    password_hash: 'hashed_password',
-                    name: 'test'
-                });
-            };
-
-            await expect(register()).rejects.toThrow('User creation failed');
-            expect(User.create).toHaveBeenCalled();
-        });
     });
 
     describe('Password Handling', () => {
@@ -190,20 +137,6 @@ describe('Auth Service Tests', () => {
 
             const decoded = jwt.verify('valid_token', 'secret');
             expect(decoded).toEqual({ sub: 123 });
-        });
-    });
-
-    describe('Login Logic', () => {
-        it('should handle error when User.findOne fails in login', async () => {
-            // Mock User.findOne to reject with an error
-            User.findOne.mockRejectedValue(new Error('Database error'));
-
-            const login = async () => {
-                await User.findOne({ where: { email: 'test@example.com' } });
-            };
-
-            await expect(login()).rejects.toThrow('Database error');
-            expect(User.findOne).toHaveBeenCalled();
         });
     });
 
@@ -245,6 +178,193 @@ describe('Auth Service Tests', () => {
 
             expect(User.create).toHaveBeenCalled();
             expect(user.email).toBe('newuser@google.com');
+        });
+    });
+});
+
+describe('Additional Auth Service Tests', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    describe('Google OAuth Strategy Error Handling', () => {
+        it('should handle errors during Google OAuth strategy', async () => {
+            const profile = {
+                id: 'google_123',
+                emails: [{ value: 'newuser@google.com' }],
+                displayName: 'New Google User',
+                photos: [{ value: 'photo.jpg' }]
+            };
+
+            const error = new Error('Database error');
+            User.findOne.mockRejectedValueOnce(error);
+
+            // Simulate callback
+            const handleOAuth = async (profile) => {
+                try {
+                    await User.findOne({ where: { google_id: profile.id } });
+                } catch (e) {
+                    return e;
+                }
+            };
+
+            const result = await handleOAuth(profile);
+
+            expect(User.findOne).toHaveBeenCalled();
+            expect(result).toEqual(error);
+        });
+
+        it('should handle missing email in Google profile', async () => {
+            const profile = {
+                id: 'google_123',
+                emails: [], // No email provided
+                displayName: 'New Google User',
+                photos: [{ value: 'photo.jpg' }]
+            };
+
+            User.findOne.mockResolvedValueOnce(null);
+
+            // Simulate callback
+            const handleOAuth = async (profile) => {
+                try {
+                    let user = await User.findOne({ where: { google_id: profile.id } });
+                    if (!user) {
+                        const email = profile.emails?.[0]?.value;
+                        if (!email) {
+                            throw new Error('No email found in Google profile');
+                        }
+                    }
+                } catch (e) {
+                    return e;
+                }
+            };
+
+            const result = await handleOAuth(profile);
+            expect(result).toEqual(new Error('No email found in Google profile'));
+        });
+    });
+
+    describe('Passport Deserialize User Error Handling', () => {
+        it('should handle errors during passport deserializeUser', async () => {
+            const error = new Error('Database error');
+            User.findByPk.mockRejectedValueOnce(error);
+
+            const deserializeUser = async (id) => {
+                try {
+                    await User.findByPk(id);
+                } catch (e) {
+                    return e;
+                }
+            };
+
+            const result = await deserializeUser(1);
+            expect(User.findByPk).toHaveBeenCalledWith(1);
+            expect(result).toEqual(error);
+        });
+    });
+
+    describe('Register Input Validation', () => {
+        it('should reject registration with missing email', async () => {
+            const req = { body: { password: 'password', name: 'Test User' } };
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+            // Simulate the register route handler
+            const registerRouteHandler = async (req, res) => {
+                const { email, password, name } = req.body;
+
+                if (!email || !password) {
+                    return res.status(400).json({ error: 'Email and password are required' });
+                }
+            };
+
+            await registerRouteHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Email and password are required' });
+        });
+
+        it('should reject registration with missing password', async () => {
+            const req = { body: { email: 'test@example.com', name: 'Test User' } };
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+            // Simulate the register route handler
+            const registerRouteHandler = async (req, res) => {
+                const { email, password, name } = req.body;
+
+                if (!email || !password) {
+                    return res.status(400).json({ error: 'Email and password are required' });
+                }
+            };
+
+            await registerRouteHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Email and password are required' });
+        });
+    });
+
+    describe('Register Database Errors', () => {
+        it('should handle database errors during registration', async () => {
+            const req = { body: { email: 'test@example.com', password: 'password', name: 'Test User' } };
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+            // Mock database error
+            User.create.mockRejectedValueOnce(new Error('Database error'));
+            bcrypt.genSalt.mockResolvedValueOnce('salt');
+            bcrypt.hash.mockResolvedValueOnce('hashedPassword');
+
+            // Simulate the register route handler
+            const registerRouteHandler = async (req, res) => {
+                try {
+                    const { email, password, name } = req.body;
+
+                    const salt = await bcrypt.genSalt(10);
+                    const password_hash = await bcrypt.hash(password, salt);
+
+                    await User.create({
+                        email,
+                        password_hash,
+                        name: name || email.split('@')[0],
+                    });
+                } catch (error) {
+                    console.error('Register error:', error);
+                    res.status(500).json({ error: 'Registration failed' });
+                }
+            };
+
+            await registerRouteHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Registration failed' });
+        });
+    });
+
+    describe('Login - User without password_hash', () => {
+        it('should return an error if user tries to login with email/password but has only Google login', async () => {
+            // Mock user found, but no password_hash
+            User.findOne.mockResolvedValueOnce({ id: 1, email: 'googleonly@test.com', password_hash: null });
+
+            const req = { body: { email: 'googleonly@test.com', password: 'password' } };
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+            // Simulate login route handler
+            const loginRouteHandler = async (req, res) => {
+                const { email, password } = req.body;
+
+                const user = await User.findOne({ where: { email } });
+                if (!user) {
+                    return res.status(401).json({ error: 'Invalid credentials' });
+                }
+
+                if (!user.password_hash) {
+                    return res.status(401).json({ error: 'Please use Google login for this account' });
+                }
+            };
+
+            await loginRouteHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({ error: 'Please use Google login for this account' });
         });
     });
 });

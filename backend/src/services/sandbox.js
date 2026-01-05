@@ -73,20 +73,48 @@ class SandboxService {
                     mockedPaths.add(match[1]);
                 }
 
-                // Create stub files for each mocked path (relative to tests/ dir)
+                // Create stub files for each mocked path
                 for (const mockPath of mockedPaths) {
-                    // Skip node_modules (external packages like 'bcryptjs', 'jsonwebtoken')
+                    let stubPath;
+                    let stubContent;
+
                     if (!mockPath.startsWith('.') && !mockPath.startsWith('/')) {
-                        continue;
-                    }
+                        // It's an npm package - create stub in node_modules
+                        const nodeModulesDir = path.join(runDir, 'node_modules', mockPath);
+                        await fs.mkdir(nodeModulesDir, { recursive: true });
+                        stubPath = path.join(nodeModulesDir, 'index.js');
 
-                    // Resolve path relative to tests/ directory
-                    const stubPath = path.resolve(testsDir, mockPath);
-                    const stubDir = path.dirname(stubPath);
-                    await fs.mkdir(stubDir, { recursive: true });
+                        // Create package.json for the stub module
+                        await fs.writeFile(path.join(nodeModulesDir, 'package.json'), JSON.stringify({
+                            name: mockPath,
+                            main: 'index.js',
+                            type: 'module'
+                        }));
 
-                    // Create ESM stub with common exports
-                    const stubContent = `// Auto-generated stub for sandbox
+                        // Create comprehensive stub for common npm packages
+                        stubContent = `// Auto-generated stub for ${mockPath}
+const mockFn = () => {};
+mockFn.mockReturnValue = () => mockFn;
+mockFn.mockResolvedValue = () => mockFn;
+export default { verify: mockFn, sign: mockFn, compare: mockFn, hash: mockFn, genSalt: mockFn };
+export const verify = mockFn;
+export const sign = mockFn;
+export const compare = mockFn;
+export const hash = mockFn;
+export const genSalt = mockFn;
+export const Strategy = class { constructor() {} };
+export const use = mockFn;
+export const authenticate = () => (req, res, next) => next();
+export const serializeUser = mockFn;
+export const deserializeUser = mockFn;
+`;
+                    } else {
+                        // Relative path - resolve relative to tests/ directory
+                        stubPath = path.resolve(testsDir, mockPath);
+                        const stubDir = path.dirname(stubPath);
+                        await fs.mkdir(stubDir, { recursive: true });
+
+                        stubContent = `// Auto-generated stub for sandbox
 export default {};
 export const User = {};
 export const History = {};
@@ -94,6 +122,8 @@ export const jwt = { secret: 'test', refreshSecret: 'test', accessExpirationMinu
 export const frontendUrl = 'http://localhost:3000';
 export const google = { clientId: 'id', clientSecret: 'secret', callbackUrl: 'url' };
 `;
+                    }
+
                     await fs.writeFile(stubPath, stubContent);
                 }
 
@@ -109,12 +139,12 @@ export const google = { clientId: 'id', clientSecret: 'secret', callbackUrl: 'ur
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
                     coverageReporters: ['json-summary', 'text'],
-                    testMatch: [`**/tests/${testFile}`],
+                    testMatch: [`** /tests/${testFile} `],
                     rootDir: '.'
                 }));
 
                 // Run with jest coverage and ESM support (use global Jest path)
-                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json`;
+                command = `docker run--rm--network none--memory =\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
