@@ -75,8 +75,8 @@ class SandboxService {
                     testMatch: [`**/${testFile}`]
                 }));
 
-                // Run with jest coverage and ESM support
-                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json ${testFile}`;
+                // Run with jest coverage and ESM support (use global Jest path)
+                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json ${testFile}`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
