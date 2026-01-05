@@ -60,17 +60,23 @@ class SandboxService {
 
                 await fs.writeFile(path.join(runDir, testFile), finalTestCode);
 
-                // Create jest config
+                // Create package.json with ESM support
+                await fs.writeFile(path.join(runDir, 'package.json'), JSON.stringify({
+                    type: 'module'
+                }));
+
+                // Create jest config with ESM support
                 await fs.writeFile(path.join(runDir, 'jest.config.json'), JSON.stringify({
                     testEnvironment: 'node',
+                    transform: {}, // Disable Babel transformation for native ESM
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
                     coverageReporters: ['json-summary', 'text'],
                     testMatch: [`**/${testFile}`]
                 }));
 
-                // Run with jest coverage
-                command = `docker run --rm --network none --memory="128m" --cpus="0.5" -v "${runDir}:/app" -w /app llm-sandbox-node jest --config jest.config.json ${testFile}`;
+                // Run with jest coverage and ESM support
+                command = `docker run --rm --network none --memory=\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json ${testFile}`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
