@@ -46,11 +46,17 @@ class SandboxService {
                 let finalTestCode = testCode;
                 // Check if test code imports source (simple check)
                 const hasImport = testCode.includes('./index');
+                // Check if test has its own mocks (self-contained test)
+                const hasMocks = testCode.includes('jest.unstable_mockModule') || testCode.includes('jest.mock(');
+                // Check if test uses beforeAll for imports (ESM pattern)
+                const hasBeforeAllImports = testCode.includes('beforeAll(') && testCode.includes('await import(');
 
-                if (!hasImport) {
+                if (!hasImport && !hasMocks && !hasBeforeAllImports) {
+                    // Only merge if test has no mocks and no dynamic imports
                     // Fallback to merge logic if no import is detected
                     finalTestCode = `${sourceCode}\n\n${testCode}`;
                 }
+                // Otherwise, test is self-contained with its own mocks/imports
 
                 await fs.writeFile(path.join(runDir, testFile), finalTestCode);
 
