@@ -139,7 +139,7 @@ export const google = { clientId: 'id', clientSecret: 'secret', callbackUrl: 'ur
                     collectCoverage: true,
                     coverageDirectory: 'coverage',
                     coverageReporters: ['json-summary', 'text'],
-                    testMatch: [`** /tests/${testFile} `],
+                    testMatch: [`**/tests/${testFile}`],
                     rootDir: '.'
                 }));
 
