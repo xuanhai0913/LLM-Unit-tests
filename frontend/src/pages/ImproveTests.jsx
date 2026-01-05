@@ -171,6 +171,8 @@ function ImproveTests() {
     const [generatedTests, setGeneratedTests] = useState('');
     const [generationTime, setGenerationTime] = useState(null);
     const [llmProvider, setLlmProvider] = useState('gemini');
+    const [testResults, setTestResults] = useState(null);
+    const [showResultsModal, setShowResultsModal] = useState(false);
 
     // GitHub scan state
     const [githubUrl, setGithubUrl] = useState('');
@@ -453,13 +455,6 @@ function ImproveTests() {
         const toastId = toast.loading('Running tests...');
         try {
             const language = selectedModule.language || 'javascript';
-            // Run the generated code. In a real scenario we might merge with existing tests first.
-            // For now, we assume generatedTests includes necessary mocks/setup or imports.
-            // But usually we need source code presence?
-            // The runTests API expects code + tests.
-            // We pass sourceCode and invalid/partial tests?
-            // Actually runTests takes { code, tests, language }.
-
             const result = await runTests({
                 code: selectedModule.sourceCode,
                 tests: generatedTests,
@@ -467,12 +462,16 @@ function ImproveTests() {
             });
 
             toast.dismiss(toastId);
+
+            // Save results and show modal
+            setTestResults(result.testResult || result);
+            setShowResultsModal(true);
+
             if (result.success && result.testResult) {
                 if (result.testResult.passed) {
-                    toast.success('Tests Passed!');
+                    toast.success('Tests Passed! Click to view details');
                 } else {
-                    toast.error('Tests Failed');
-                    // Optionally show logs
+                    toast.error('Tests Failed - View details in modal');
                 }
             } else {
                 toast.error('Failed to execute tests');
@@ -480,6 +479,7 @@ function ImproveTests() {
         } catch (error) {
             toast.dismiss(toastId);
             toast.error('Error running tests');
+            console.error('Test execution error:', error);
         }
     };
 
@@ -793,6 +793,64 @@ describe('Auth', () => {
                         >
                             <FiDownload /> Download
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Test Results Modal */}
+            {showResultsModal && testResults && (
+                <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
+                    <div className="modal-content test-results-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>
+                                {testResults.passed ? '✅ Tests Passed' : '❌ Tests Failed'}
+                            </h2>
+                            <button className="modal-close" onClick={() => setShowResultsModal(false)}>×</button>
+                        </div>
+
+                        <div className="modal-body">
+                            {/* Test Stats */}
+                            {testResults.details && (
+                                <div className="test-stats-grid">
+                                    <div className="test-stat">
+                                        <span className="stat-label">Total</span>
+                                        <span className="stat-value">{testResults.details.total || 0}</span>
+                                    </div>
+                                    <div className="test-stat success">
+                                        <span className="stat-label">Passed</span>
+                                        <span className="stat-value">{testResults.details.passed || 0}</span>
+                                    </div>
+                                    <div className="test-stat error">
+                                        <span className="stat-label">Failed</span>
+                                        <span className="stat-value">{testResults.details.failed || 0}</span>
+                                    </div>
+                                    {testResults.details.coverage !== null && (
+                                        <div className="test-stat">
+                                            <span className="stat-label">Coverage</span>
+                                            <span className="stat-value">{testResults.details.coverage}%</span>
+                                        </div>
+                                    )}
+                                    {testResults.details.duration && (
+                                        <div className="test-stat">
+                                            <span className="stat-label">Duration</span>
+                                            <span className="stat-value">{testResults.details.duration}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Terminal Output */}
+                            <div className="test-output-section">
+                                <h3>Test Output</h3>
+                                <pre className="terminal-output">{testResults.output || 'No output available'}</pre>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowResultsModal(false)}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

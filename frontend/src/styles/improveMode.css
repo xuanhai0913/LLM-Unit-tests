@@ -706,3 +706,22 @@
     color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
+
+/* Test Results Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+.test-results-modal { background: var(--surface); border-radius: 12px; max-width: 900px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-subtle); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); }
+.modal-header h2 { font-size: 1.5rem; color: var(--text-primary); margin: 0; }
+.modal-close { background: none; border: none; font-size: 2rem; color: var(--text-secondary); cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s; }
+.modal-close:hover { background: var(--bg-primary); color: var(--text-primary); }
+.modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 0.75rem; }
+.test-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.test-stat { background: var(--bg-primary); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-subtle); }
+.test-stat .stat-label { display: block; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+.test-stat .stat-value { display: block; font-size: 1.75rem; font-weight: 700; color: var(--text-primary); }
+.test-stat.success .stat-value { color: var(--success-green); }
+.test-stat.error .stat-value { color: var(--error-red); }
+.test-output-section { margin-top: 1.5rem; }
+.test-output-section h3 { font-size: 1rem; color: var(--text-primary); margin-bottom: 0.75rem; }
+.terminal-output { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 1px solid #333; }
