@@ -144,7 +144,7 @@ export const google = { clientId: 'id', clientSecret: 'secret', callbackUrl: 'ur
                 }));
 
                 // Run with jest coverage and ESM support (use global Jest path)
-                command = `docker run--rm--network none--memory =\"256m\" --cpus=\"0.5\" -v \"${runDir}:/app\" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json`;
+                command = `docker run --rm --network none --memory=256m -v "${runDir}:/app" -w /app llm-sandbox-node node --experimental-vm-modules /usr/local/lib/node_modules/jest/bin/jest.js --config jest.config.json`;
             } else {
                 return { success: false, error: 'Unsupported language' };
             }
